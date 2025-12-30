@@ -1,0 +1,68 @@
+spring:
+  application:
+    name: workly-server
+
+  profiles:
+    active: dev
+
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/workly
+    redis:
+      host: localhost
+      port: 6379
+    jpa:
+      database-platform: org.hibernate.dialect.PostgreSQLDialect
+    postgresql:
+      uri: jdbc:postgresql://localhost:5432/workly
+      username: workly
+      password: password
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/workly
+    username: workly
+    password: password
+    driver-class-name: org.postgresql.Driver
+
+  kafka:
+    bootstrap-servers: 127.0.0.1:9094
+    consumer:
+      group-id: workly-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+logging:
+  level:
+    com.workly: DEBUG
+    org.springframework.security: DEBUG
+
+server:
+  port: 8080
+
+app:
+  mode: monolith # monolith | microservice
+  region: india
+
+job:
+  max-radius-km: 100
+  assignment:
+    mode: FIRST_ACCEPT # FIRST_ACCEPT | MANUAL_SELECT
+
+sms:
+  provider: mock # mock | fast2sms
+
+monetisation:
+  enabled: false
+  model: PER_JOB # SUBSCRIPTION | PER_JOB
+  allow_browse_without_payment: true
+
+auth:
+  token:
+    ttl-hours: 24
+    secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970

@@ -1,0 +1,11 @@
+// Minimal root build file. Subprojects handle their own buildscripts.
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

@@ -1,0 +1,15 @@
+rootProject.name = 'workly'
+
+include ':server'
+project(':server').projectDir = file('workly-Server')
+
+include ':chat-service'
+
+include ':search-service'
+project(':search-service').projectDir = file('workly-Search-Service')
+
+include ':config-service'
+project(':config-service').projectDir = file('workly-Config-Service')
+
+includeBuild 'workly-Help-Seeker'
+includeBuild 'workly-Help-Provider'

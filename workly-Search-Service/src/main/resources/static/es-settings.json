@@ -1,0 +1,22 @@
+{
+    "index": {
+        "analysis": {
+            "analyzer": {
+                "phonetic_analyzer": {
+                    "tokenizer": "standard",
+                    "filter": [
+                        "lowercase",
+                        "phonetic_filter"
+                    ]
+                }
+            },
+            "filter": {
+                "phonetic_filter": {
+                    "type": "phonetic",
+                    "encoder": "metaphone",
+                    "replace": false
+                }
+            }
+        }
+    }
+}

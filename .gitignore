@@ -1,0 +1,192 @@
+############################################
+# OS / SYSTEM FILES
+############################################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+
+############################################
+# IDE / EDITOR FILES
+############################################
+# IntelliJ / Android Studio
+.idea/
+*.iml
+misc.xml
+deploymentTargetDropDown.xml
+render.experimental.xml
+
+# VS Code
+.vscode/
+.history/
+
+# Eclipse / STS
+.project
+.classpath
+.settings/
+
+# NetBeans
+nbproject/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+
+############################################
+# LOG FILES
+############################################
+*.log
+logs/
+*.hprof
+
+
+############################################
+# ENV / SECRETS
+############################################
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.jks
+*.keystore
+secrets/
+credentials/
+
+
+############################################
+# GRADLE (ROOT + ALL MICROSERVICES)
+############################################
+.gradle/
+**/.gradle/
+build/
+**/build/
+
+# Gradle local config
+local.properties
+gradle.properties.user
+
+# Gradle wrapper (KEEP wrapper JAR)
+!gradlew
+!gradlew.bat
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+
+############################################
+# JAVA / SPRING BOOT
+############################################
+target/
+**/target/
+out/
+**/out/
+
+# Spring Boot
+spring.log
+application-local.yml
+application-local.properties
+
+
+############################################
+# NODE / FRONTEND (Admin Portal, Web Apps)
+############################################
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
+dist/
+**/dist/
+coverage/
+**/coverage/
+
+
+############################################
+# ANDROID (Help-Seeker / Help-Provider APPS)
+############################################
+# Android build
+*.apk
+*.aab
+build/
+**/build/
+output-metadata.json
+
+# Android Studio cache
+captures/
+.externalNativeBuild/
+.cxx/
+lint/
+lint-results*.xml
+
+# Android signing
+key.properties
+
+
+############################################
+# TEST / TEMP FILES
+############################################
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*.swo
+
+
+############################################
+# DATABASE / RUNTIME DATA
+############################################
+data/
+db/
+*.db
+*.sqlite
+*.sqlite3
+dump/
+backups/
+
+
+############################################
+# DOCKER / K8s (OPTIONAL)
+############################################
+docker-data/
+docker-volumes/
+*.pid
+
+
+############################################
+# SECURITY SCANS / REPORTS
+############################################
+dependency-check-report.html
+dependency-check-report.xml
+*.sarif
+
+
+############################################
+# MONITORING / PROFILING
+############################################
+heapdump.hprof
+jfr/
+*.jfr
+
+
+############################################
+# MISC
+############################################
+*.orig
+*.rej
+*.patch
+*.diff
+
+
+
