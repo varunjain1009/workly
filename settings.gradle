@@ -4,6 +4,7 @@ include ':server'
 project(':server').projectDir = file('workly-Server')
 
 include ':chat-service'
+project(':chat-service').projectDir = file('workly-Chat-Service')
 
 include ':search-service'
 project(':search-service').projectDir = file('workly-Search-Service')

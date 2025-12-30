@@ -45,6 +45,8 @@ render.experimental.xml
 <<<<<<< HEAD
 # VS Code
 .vscode/
+!.vscode/launch.json
+!.vscode/tasks.json
 .history/
 
 # Eclipse / STS
