@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         androidx.navigation.fragment.NavHostFragment navHostFragment = (androidx.navigation.fragment.NavHostFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.nav_host_fragment);
+                .findFragmentById(com.workly.helpprovider.R.id.nav_host_fragment);
         androidx.navigation.NavController navController = navHostFragment.getNavController();
 
         // Setup Bottom Navigation

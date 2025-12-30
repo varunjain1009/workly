@@ -75,8 +75,11 @@ public class ConfigService {
     }
 
     private void publishUpdate(String key, String value, String scope) {
-        String message = String.format("%s|%s|%s", key, scope, value);
-        redisTemplate.convertAndSend(CONFIG_CHANNEL, message);
-        log.info("Published config update: {}", message);
+        String message = String.format("%s|%s|%s",
+                java.util.Objects.requireNonNull(key),
+                java.util.Objects.requireNonNull(scope),
+                java.util.Objects.requireNonNull(value));
+        redisTemplate.convertAndSend(CONFIG_CHANNEL, java.util.Objects.requireNonNull(message));
+        log.info("Published config update: {}", java.util.Objects.requireNonNull(message));
     }
 }

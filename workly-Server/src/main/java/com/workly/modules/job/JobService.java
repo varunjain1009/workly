@@ -1,6 +1,7 @@
 package com.workly.modules.job;
 
 import com.workly.core.WorklyException;
+import com.workly.modules.search.SearchServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -16,10 +17,15 @@ public class JobService {
 
     private final JobRepository jobRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final SearchServiceClient searchServiceClient;
 
     private static final String JOB_TOPIC = "job.created";
 
     public Job createJob(Job job) {
+        if (job.getRequiredSkills() != null && !job.getRequiredSkills().isEmpty()) {
+            job.setRequiredSkills(searchServiceClient.normalizeSkills(job.getRequiredSkills()));
+        }
+
         job.setStatus(JobStatus.CREATED);
         if (job.isImmediate()) {
             job.setStatus(JobStatus.BROADCASTED);

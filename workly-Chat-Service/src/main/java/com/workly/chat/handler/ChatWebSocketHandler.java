@@ -11,6 +11,7 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import org.springframework.lang.NonNull;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,7 +28,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
 
     @Override
-    public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+    public void afterConnectionEstablished(@NonNull WebSocketSession session) throws Exception {
         String userId = getUserIdFromSession(session);
         if (userId != null) {
             sessions.put(userId, session);
@@ -43,12 +44,13 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 }
             });
         } else {
-            session.close(CloseStatus.BAD_DATA);
+            session.close(java.util.Objects.requireNonNull(CloseStatus.BAD_DATA));
         }
     }
 
     @Override
-    protected void handleTextMessage(WebSocketSession session, TextMessage textMessage) throws Exception {
+    protected void handleTextMessage(@NonNull WebSocketSession session, @NonNull TextMessage textMessage)
+            throws Exception {
         try {
             Message message = objectMapper.readValue(textMessage.getPayload(), Message.class);
             String userId = getUserIdFromSession(session);
@@ -78,7 +80,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+    public void afterConnectionClosed(@NonNull WebSocketSession session, @NonNull CloseStatus status) throws Exception {
         String userId = getUserIdFromSession(session);
         if (userId != null) {
             sessions.remove(userId);
@@ -87,7 +89,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     private void sendMessage(WebSocketSession session, Message message) throws Exception {
-        session.sendMessage(new TextMessage(objectMapper.writeValueAsString(message)));
+        String payload = objectMapper.writeValueAsString(message);
+        session.sendMessage(new TextMessage(java.util.Objects.requireNonNull(payload)));
     }
 
     private String getUserIdFromSession(WebSocketSession session) {

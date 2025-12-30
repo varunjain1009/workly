@@ -1,6 +1,7 @@
 package com.workly.modules.profile;
 
 import lombok.RequiredArgsConstructor;
+import com.workly.modules.search.SearchServiceClient;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -11,8 +12,12 @@ public class ProfileService {
 
     private final WorkerProfileRepository workerRepository;
     private final SkillSeekerProfileRepository seekerRepository;
+    private final SearchServiceClient searchServiceClient;
 
     public WorkerProfile createOrUpdateWorkerProfile(WorkerProfile profile) {
+        if (profile.getSkills() != null && !profile.getSkills().isEmpty()) {
+            profile.setSkills(searchServiceClient.normalizeSkills(profile.getSkills()));
+        }
         return workerRepository.save(profile);
     }
 

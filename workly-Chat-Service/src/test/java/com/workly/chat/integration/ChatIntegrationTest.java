@@ -12,9 +12,8 @@ import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
-import java.time.Duration;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 @SpringBootTest
 @Testcontainers
@@ -26,6 +25,7 @@ class ChatIntegrationTest {
 
     @Container
     @ServiceConnection
+    @SuppressWarnings("deprecation")
     static KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.4.0"));
 
     @Autowired

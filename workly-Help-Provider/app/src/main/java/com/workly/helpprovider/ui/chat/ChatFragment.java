@@ -10,7 +10,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import com.workly.helpprovider.databinding.FragmentChatBinding;
-import com.workly.helpprovider.data.local.AuthManager;
+import com.workly.helpprovider.data.auth.AuthManager;
 import dagger.hilt.android.AndroidEntryPoint;
 import javax.inject.Inject;
 

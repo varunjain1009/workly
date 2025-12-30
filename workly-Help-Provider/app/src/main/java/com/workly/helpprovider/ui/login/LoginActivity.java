@@ -103,7 +103,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private void observeViewModel() {
         viewModel.getIsLoading().observe(this, isLoading -> {
-            binding.progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+            // TODO: Add progressBar to layout - binding.progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
             binding.btnSendOtp.setEnabled(!isLoading && binding.etPhone.getText().length() == 10);
             binding.btnVerifyOtp.setEnabled(!isLoading && binding.etOtp.getText().length() == 4);
         });

@@ -83,8 +83,8 @@ public class HomeFragment extends Fragment implements JobAdapter.OnJobClickListe
     public void onJobClick(Job job) {
         Bundle bundle = new Bundle();
         bundle.putSerializable("job", job);
-        androidx.navigation.Navigation.findNavController(requireView())
-                .navigate(com.workly.helpprovider.R.id.action_home_to_details, bundle);
+        // TODO: Fix navigation
+        // androidx.navigation.Navigation.findNavController(requireView()).navigate(com.workly.helpprovider.R.id.action_home_to_details, bundle);
     }
 
     @Override

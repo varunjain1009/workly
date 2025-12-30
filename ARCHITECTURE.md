@@ -6,31 +6,74 @@ Workly operates on a microservices-based architecture where specialized componen
 
 ```mermaid
 graph TD
-    ClientS[Seeker App] -->|HTTP| API[Core Server]
-    ClientP[Provider App] -->|HTTP| API
-    
-    ClientS -->|WebSocket| Chat[Chat Service]
-    ClientP -->|WebSocket| Chat
-    
-    API -->|Kafka| Consumer[Notification Module]
-    Chat -->|Kafka| Consumer
-    
-    API -->|HTTP| Search[Search Service]
-    Admin[Admin Portal] -->|HTTP| Config[Config Service]
-    
-    subgraph specific [Storage Layer]
-        API --> Postgres[(Postgres)]
-        API --> Mongo[(MongoDB)]
-        Chat --> MongoChat[(Mongo ChatLogs)]
-        Search --> Elastic[(Elasticsearch)]
-        Search --> Redis[(Redis Cache)]
-        Config --> ConfigDB[(MongoDB/Redis)]
+    subgraph Clients [Mobile Applications]
+        ClientS[Help Seeker App]
+        ClientP[Help Provider App]
     end
 
-    Config -->|Pub/Sub| API
-    Config -->|Pub/Sub| Chat
-    Config -->|Pub/Sub| Search
-    Config -->|Pub/Sub| Consumer
+    subgraph Backend [Backend System]
+        API[Core Server / Gateway]
+        Chat[Chat Service]
+        Search[Search Service]
+        Config[Config Service]
+        Consumer[Notification Service]
+    end
+
+    ClientS -->|HTTP / REST| API
+    ClientP -->|HTTP / REST| API
+    
+    ClientS -->|WebSocket| Chat
+    ClientP -->|WebSocket| Chat
+    
+    API -->|HTTP| Search
+    API -->|Kafka| Consumer
+    Chat -->|Kafka| Consumer
+    
+    subgraph Storage [Data Layer]
+        API --> Postgres[(Postgres)]
+        API --> Mongo[(MongoDB)]
+        Search --> Elastic[(Elasticsearch)]
+        Search --> Redis[(Redis Cache)]
+    end
+```
+
+## Expertise & Spelling Normalization
+
+The system handles misspelled skills (e.g., "carpantur" -> "Carpenter") using a multi-step normalization process in the **Search Service**.
+
+### Spelling Correction Flow
+
+```mermaid
+sequenceDiagram
+    participant App as Mobile App
+    participant Server as Core Server
+    participant Search as Search Service
+    participant Redis as Redis Cache
+    participant Elastic as Elasticsearch
+
+    App->>Server: Search "carpantur"
+    Server->>Search: Normalize "carpantur"
+    
+    rect rgb(240, 248, 255)
+        note right of Search: Step 1: Exact Match
+        Search->>Elastic: Query (Exact match on Name/Alias)
+        alt Match Found
+            Elastic-->>Search: Return "Carpenter"
+            Search-->>Server: "Carpenter"
+        else No Match
+            note right of Search: Step 2: Fuzzy Match (Levenshtein)
+            Search->>Elastic: Query (Fuzzy match ~2 edits)
+            alt Match Found
+                Elastic-->>Search: Return "Carpenter"
+                Search-->>Server: "Carpenter"
+            else No Match
+                note right of Search: Step 3: Fallback
+                Search-->>Server: Return Original "carpantur"
+            end
+        end
+    end
+    
+    Server-->>App: Results for "Carpenter"
 ```
 
 ## Module Responsibilities

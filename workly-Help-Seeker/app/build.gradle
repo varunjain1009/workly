@@ -65,6 +65,10 @@ dependencies {
     // Location
     implementation 'com.google.android.gms:play-services-location:21.0.1'
 
+    // Firebase Cloud Messaging
+    implementation platform('com.google.firebase:firebase-bom:32.7.0')
+    implementation 'com.google.firebase:firebase-messaging'
+
     // Testing
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

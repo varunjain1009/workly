@@ -110,10 +110,11 @@ public class JobDetailsFragment extends Fragment {
             binding.cvOtp.setVisibility(View.VISIBLE);
             binding.tvOtp.setText(job.getCompletionOtp() != null ? job.getCompletionOtp() : "----");
 
-            if (job.getWorkerMobileNumber() != null) {
-                binding.btnChat.setVisibility(View.VISIBLE);
-                binding.btnChat.setOnClickListener(v -> startChat());
-            }
+            // TODO: Enable chat when navigation is configured
+            // if (job.getWorkerId() != null) {
+            // binding.btnChat.setVisibility(View.VISIBLE);
+            // binding.btnChat.setOnClickListener(v -> startChat());
+            // }
         }
 
         if (job.getStatus() == JobStatus.COMPLETED) {
@@ -187,12 +188,16 @@ public class JobDetailsFragment extends Fragment {
                 calendar.get(java.util.Calendar.DAY_OF_MONTH)).show();
     }
 
-    private void startChat() {
-        Bundle bundle = new Bundle();
-        bundle.putString("otherUserId", job.getWorkerMobileNumber());
-        androidx.navigation.Navigation.findNavController(requireView()).navigate(com.workly.helpseeker.R.id.nav_chat,
-                bundle);
-    }
+    // TODO: Implement chat navigation when ready
+    /*
+     * private void startChat() {
+     * Bundle bundle = new Bundle();
+     * bundle.putString("otherUserId", job.getWorkerId());
+     * Navigation.findNavController(requireView())
+     * .navigate(com.workly.helpseeker.R.id.action_jobDetails_to_chatFragment,
+     * bundle);
+     * }
+     */
 
     private void submitReview() {
         float rating = binding.sliderRating.getValue();

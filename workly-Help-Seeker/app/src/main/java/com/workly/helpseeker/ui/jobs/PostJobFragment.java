@@ -50,6 +50,9 @@ public class PostJobFragment extends Fragment {
     @Inject
     Properties properties;
 
+    @Inject
+    com.workly.helpseeker.data.config.ConfigManager configManager;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,

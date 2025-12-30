@@ -26,6 +26,7 @@ class AutocompleteIntegrationTest {
 
     @Container
     @ServiceConnection
+    @SuppressWarnings("resource")
     static MongoDBContainer mongo = new MongoDBContainer("mongo:6.0");
 
     static String imageId;
@@ -45,6 +46,7 @@ class AutocompleteIntegrationTest {
 
     @Container
     @ServiceConnection
+    @SuppressWarnings("resource")
     static ElasticsearchContainer elasticsearch = new ElasticsearchContainer(
             DockerImageName.parse(imageId).asCompatibleSubstituteFor("docker.elastic.co/elasticsearch/elasticsearch"))
             .withEnv("discovery.type", "single-node")
@@ -53,6 +55,7 @@ class AutocompleteIntegrationTest {
 
     @Container
     @ServiceConnection
+    @SuppressWarnings("resource")
     static GenericContainer<?> redis = new GenericContainer<>(DockerImageName.parse("redis:7.0"))
             .withExposedPorts(6379);
 

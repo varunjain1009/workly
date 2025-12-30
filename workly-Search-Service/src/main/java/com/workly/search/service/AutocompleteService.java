@@ -1,7 +1,7 @@
 package com.workly.search.service;
 
 import com.workly.search.model.SkillDocument;
-import com.workly.search.repository.search.SkillSearchRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AutocompleteService {
 
-    private final SkillSearchRepository skillSearchRepository;
     private final ElasticsearchOperations elasticsearchOperations;
     private final StringRedisTemplate redisTemplate;
 

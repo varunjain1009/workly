@@ -16,7 +16,8 @@ public class ChatEventProducer {
 
     public void publishMessageCreated(Message message) {
         try {
-            kafkaTemplate.send(TOPIC, message.getMessageId(), message);
+            @SuppressWarnings({ "null", "unused" })
+            var future = kafkaTemplate.send(TOPIC, message.getMessageId(), message);
             // Keying by messageId or senderId for partition ordering if needed
         } catch (Exception e) {
             log.error("Failed to publish chat event", e);

@@ -116,19 +116,21 @@ public class JobDetailsFragment extends Fragment {
         // Show complete section if Accepted/Assigned
         if (job.getStatus() == JobStatus.ASSIGNED) {
             binding.llCompleteJob.setVisibility(View.VISIBLE);
-            if (job.getSeekerMobileNumber() != null) {
-                binding.btnChatSeeker.setVisibility(View.VISIBLE);
-                binding.btnChatSeeker.setOnClickListener(v -> startChat());
-            }
+            // TODO: Re-enable chat when Job model has seekerId
+            // if (job.getSeekerId() != null) {
+            //     binding.btnChatSeeker.setVisibility(View.VISIBLE);
+            //     binding.btnChatSeeker.setOnClickListener(v -> startChat());
+            // }
         }
     }
 
     private void startChat() {
         Bundle bundle = new Bundle();
-        bundle.putString("otherUserId", job.getSeekerMobileNumber());
-        androidx.navigation.Navigation.findNavController(requireView()).navigate(com.workly.helpprovider.R.id.nav_chat,
-                bundle);
+        // TODO: Fix - bundle.putString("otherUserId", job.getSeekerId());
+            // TODO: Fix navigation
+            // androidx.navigation.Navigation.findNavController(requireView()).navigate(com.workly.helpprovider.R.id.nav_chat, bundle);
     }
+    */
 
     @Override
     public void onDestroyView() {

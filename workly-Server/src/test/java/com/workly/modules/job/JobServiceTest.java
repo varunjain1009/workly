@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.kafka.core.KafkaTemplate;
+import com.workly.modules.search.SearchServiceClient;
 
 import java.util.Collections;
 import java.util.List;
@@ -22,18 +23,24 @@ class JobServiceTest {
     @Mock
     private KafkaTemplate<String, Object> kafkaTemplate;
 
+    @Mock
+    private SearchServiceClient searchServiceClient;
+
     private JobService jobService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        jobService = new JobService(jobRepository, kafkaTemplate);
+        jobService = new JobService(jobRepository, kafkaTemplate, searchServiceClient);
     }
 
     @Test
     void createJob_ShouldSetStatusAndOtpAndPublishEvent() {
         Job job = new Job();
         job.setImmediate(true);
+        job.setRequiredSkills(List.of("skill1"));
+        when(searchServiceClient.normalizeSkills(anyList())).thenReturn(List.of("NormalizedSkill"));
+
         when(jobRepository.save(any(Job.class))).thenAnswer(i -> {
             Job saved = i.getArgument(0);
             saved.setId("job123");
@@ -46,6 +53,7 @@ class JobServiceTest {
         assertEquals(JobStatus.BROADCASTED, result.getStatus());
         verify(jobRepository).save(any(Job.class));
         verify(kafkaTemplate).send(eq("job.created"), any(JobEvent.class));
+        verify(searchServiceClient).normalizeSkills(anyList());
     }
 
     @Test

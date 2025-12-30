@@ -6,17 +6,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.data.redis.core.StringRedisTemplate;
+
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import java.time.Duration;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 @SpringBootTest
 @Testcontainers
@@ -28,14 +25,12 @@ class ConfigServiceIntegrationTest {
 
     @Container
     @ServiceConnection
+    @SuppressWarnings("resource")
     static GenericContainer<?> redis = new GenericContainer<>(DockerImageName.parse("redis:7.0"))
             .withExposedPorts(6379);
 
     @Autowired
     private ConfigService configService;
-
-    @Autowired
-    private StringRedisTemplate redisTemplate;
 
     @Test
     void shouldCreateAndVersionConfig() {

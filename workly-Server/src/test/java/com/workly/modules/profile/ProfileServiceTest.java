@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import com.workly.modules.search.SearchServiceClient;
 
 import java.util.Optional;
 
@@ -18,12 +19,15 @@ class ProfileServiceTest {
     @Mock
     private SkillSeekerProfileRepository seekerRepository;
 
+    @Mock
+    private SearchServiceClient searchServiceClient;
+
     private ProfileService profileService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        profileService = new ProfileService(workerRepository, seekerRepository);
+        profileService = new ProfileService(workerRepository, seekerRepository, searchServiceClient);
     }
 
     @Test

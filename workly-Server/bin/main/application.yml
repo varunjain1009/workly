@@ -90,3 +90,6 @@ custom:
     allow-browse-without-payment: true
   chat:
     url: ws://10.0.2.2:8082/ws/chat
+
+search-service:
+  url: http://localhost:8083

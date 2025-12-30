@@ -10,6 +10,8 @@ import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 import org.springframework.web.socket.server.HandshakeInterceptor;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 import java.util.Map;
 
@@ -18,16 +20,19 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketConfigurer {
 
+    @NonNull
     private final ChatWebSocketHandler chatWebSocketHandler;
 
     @Override
-    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+    public void registerWebSocketHandlers(@NonNull WebSocketHandlerRegistry registry) {
         registry.addHandler(chatWebSocketHandler, "/ws/chat")
                 .setAllowedOrigins("*")
                 .addInterceptors(new HandshakeInterceptor() {
                     @Override
-                    public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
-                            WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
+                    public boolean beforeHandshake(@NonNull ServerHttpRequest request,
+                            @NonNull ServerHttpResponse response,
+                            @NonNull WebSocketHandler wsHandler, @NonNull Map<String, Object> attributes)
+                            throws Exception {
                         // Extract query param ?userId=...
                         // In production, verify JWT token from Header/Query
                         // For MVP: Simple userId extraction
@@ -41,8 +46,8 @@ public class WebSocketConfig implements WebSocketConfigurer {
                     }
 
                     @Override
-                    public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response,
-                            WebSocketHandler wsHandler, Exception exception) {
+                    public void afterHandshake(@NonNull ServerHttpRequest request, @NonNull ServerHttpResponse response,
+                            @NonNull WebSocketHandler wsHandler, @Nullable Exception exception) {
                     }
                 });
     }
