@@ -44,6 +44,9 @@ public class LoginActivity extends AppCompatActivity {
     @Inject
     Properties properties;
 
+    @Inject
+    com.workly.helpseeker.data.config.ConfigManager configManager;
+
     private boolean debugEnabled = false;
     private CountDownTimer countDownTimer;
     private long resendDelayMs = 300000; // Default 5 mins
@@ -54,7 +57,23 @@ public class LoginActivity extends AppCompatActivity {
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        // Disable UI until config is loaded
+        binding.btnSendOtp.setEnabled(false);
+        // Show loading if needed, or just wait locally
+
+        configManager.fetchConfig();
+        // Give it a moment or update UI when config is ready?
+        // For simplicity, we assume network is fast or defaults are used.
+        // But better is to observe. ConfigManager assumes a simple fetch.
+        // We will delay slightly or just proceed with defaults if not ready.
+        // Ideally we should have a callback/observable.
+        // Let's modify ConfigManager to accept a callback or use LiveData?
+        // Keeping it simple: We trigger fetch here. We use values if available.
+
         debugEnabled = Boolean.parseBoolean(properties.getProperty("app.debug_enabled", "false"));
+        // Override with config if available? Yes, but async.
+        // Let's make ConfigManager have a callback for "onFetchComplete"
+
         resendDelayMs = Long.parseLong(properties.getProperty("auth.otp.resend_delay_seconds", "300")) * 1000;
 
         if (authManager.isLoggedIn()) {

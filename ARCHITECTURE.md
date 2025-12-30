@@ -68,21 +68,126 @@ graph TD
 ## Key Flows
 
 ### Job Creation & Notification
-1.  **Seeker** Posts Job (API).
-2.  **API** saves Job to Mongo/Postgres.
-3.  **API** finds matching Workers (Geospatial).
-4.  **API** publishes `job-created` event (Kafka).
-5.  **Notification Consumer** triggers FCM to Workers.
+
+```mermaid
+sequenceDiagram
+    participant Seeker as Seeker App
+    participant API as workly-Server
+    participant DB as Database
+    participant Kafka as Kafka
+    participant Consumer as Notification Consumer
+    participant FCM as Firebase FCM
+    participant Worker as Provider App
+
+    Seeker->>API: POST /jobs (Create Job)
+    API->>DB: Save Job Details
+    DB-->>API: Job Saved
+    API->>DB: Geospatial Query (Find Nearby Workers)
+    DB-->>API: Matching Workers List
+    API->>Kafka: Publish job-created Event
+    API-->>Seeker: Job Created Successfully
+    
+    Kafka->>Consumer: Consume job-created
+    loop For each matching worker
+        Consumer->>FCM: Send Push Notification
+        FCM->>Worker: "New Job Available"
+    end
+```
 
 ### Real-Time Chat
-1.  **Seeker** connects to WebSocket.
-2.  **Seeker** sends message to **Worker**.
-3.  **Chat Service** saves to MongoDB.
-4.  **Chat Service** pushes to **Worker's** active socket.
-5.  If Worker is offline, **Chat Service** publishes `chat-event` to Kafka.
-6.  **Notification Consumer** sends generic FCM "New Message".
 
-### Configuration Flow (Runtime)
-   - **Admin** updates config in **Portal** -> **Config Service** saves to Mongo (v2) -> Publishes `config_updates` event to **Redis**.
-   - **workly-Server** (and others) listens to **Redis** -> Updates local in-memory cache.
-   - **Next Request** uses new config value immediately (latency < 10ms).
+```mermaid
+sequenceDiagram
+    participant Seeker as Seeker App
+    participant Chat as Chat Service
+    participant DB as MongoDB
+    participant Worker as Provider App
+    participant Kafka as Kafka
+    participant Consumer as Notification Consumer
+    participant FCM as Firebase FCM
+
+    Seeker->>Chat: Connect WebSocket
+    Chat-->>Seeker: Connection Established
+    Worker->>Chat: Connect WebSocket
+    Chat-->>Worker: Connection Established
+    
+    Seeker->>Chat: Send Message to Worker
+    Chat->>DB: Persist Message
+    DB-->>Chat: Saved
+    
+    alt Worker is Online
+        Chat->>Worker: Push Message via WebSocket
+    else Worker is Offline
+        Chat->>Kafka: Publish chat-event
+        Kafka->>Consumer: Consume chat-event
+        Consumer->>FCM: Send Push Notification
+        FCM->>Worker: "New Message from Seeker"
+    end
+```
+
+### Configuration Flow (Server-Side Runtime)
+
+```mermaid
+sequenceDiagram
+    participant Admin as Admin Portal
+    participant Config as Config Service
+    participant DB as MongoDB
+    participant Redis as Redis Pub/Sub
+    participant Server as workly-Server
+    participant Chat as Chat Service
+    participant Search as Search Service
+
+    Admin->>Config: Update Configuration
+    Config->>DB: Save Config v2
+    DB-->>Config: Saved
+    Config->>Redis: Publish config_updates Event
+    
+    par Listeners Update Cache
+        Redis->>Server: config_updates
+        Server->>Server: Update In-Memory Cache
+        Redis->>Chat: config_updates
+        Chat->>Chat: Update In-Memory Cache
+        Redis->>Search: config_updates
+        Search->>Search: Update In-Memory Cache
+    end
+    
+    Note over Server,Search: Next request uses new config (< 10ms latency)
+```
+
+### Dynamic Configuration Sync to Mobile Apps
+
+The platform implements real-time configuration synchronization using **Firebase Cloud Messaging (FCM)** to push updates to mobile applications without requiring app updates.
+
+```mermaid
+sequenceDiagram
+    participant Admin as Admin/Config Service
+    participant Server as workly-Server
+    participant DB as MongoDB
+    participant FCM as Firebase Cloud Messaging
+    participant App as Mobile App
+
+    Admin->>Server: Config Updated
+    Server->>DB: Query UserTokens
+    DB-->>Server: Return Tokens
+    
+    loop For each token
+        Server->>Server: Check throttle interval
+        alt Interval passed
+            Server->>FCM: Send CONFIG_UPDATE
+            Server->>DB: Update lastConfigNotificationTime
+            FCM->>App: Push Notification
+            App->>Server: GET /api/v1/config/public
+            Server-->>App: Latest Config
+            App->>Server: POST /api/v1/config/sync
+            Server->>DB: Update lastSyncedTime
+        end
+    end
+```
+
+**Key Components:**
+- **Throttling**: Notifications limited to 1-hour intervals per device (configurable)
+- **Tracking**: `UserToken` stores `lastConfigNotificationTime` and `lastSyncedTime`
+- **Endpoints**: 
+  - `GET /api/v1/config/public` - Fetch latest configuration
+  - `POST /api/v1/config/sync` - Acknowledge sync completion
+- **Mobile Integration**: Apps listen for `CONFIG_UPDATE` FCM messages and trigger `ConfigManager.syncConfig()`

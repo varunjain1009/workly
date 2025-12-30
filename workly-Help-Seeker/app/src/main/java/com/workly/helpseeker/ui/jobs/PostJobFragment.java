@@ -173,7 +173,15 @@ public class PostJobFragment extends Fragment {
             return true; // Immediate or incomplete
 
         try {
-            int minHours = Integer.parseInt(properties.getProperty("job.scheduling.min_hours_advance", "2"));
+            int minHours = 2;
+            if (configManager.getConfig() != null) {
+                minHours = configManager.getConfig().getJobMinAdvanceHours();
+            } else {
+                try {
+                    minHours = Integer.parseInt(properties.getProperty("job.scheduling.min_hours_advance", "2"));
+                } catch (Exception e) {
+                    /* use default 2 */ }
+            }
 
             java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm",
                     java.util.Locale.getDefault());
@@ -200,7 +208,13 @@ public class PostJobFragment extends Fragment {
         String description = binding.etDescription.getText().toString();
         String skill = binding.etSkill.getText().toString();
         String radiusStr = binding.etRadius.getText().toString();
-        int radius = radiusStr.isEmpty() ? 10 : Integer.parseInt(radiusStr);
+
+        int defaultRadius = 10;
+        if (configManager.getConfig() != null) {
+            defaultRadius = configManager.getConfig().getJobMaxRadiusKm();
+        }
+
+        int radius = radiusStr.isEmpty() ? defaultRadius : Integer.parseInt(radiusStr);
 
         AssignmentMode mode = binding.chipManualSelect.isChecked() ? AssignmentMode.MANUAL_SELECT
                 : AssignmentMode.FIRST_ACCEPT;

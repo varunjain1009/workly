@@ -55,7 +55,26 @@ public class AvailabilityService extends Service implements LocationHelper.OnLoc
                 .build();
 
         startForeground(1, notification);
-        locationHelper.startLocationUpdates();
+        apiService.getPublicConfig().enqueue(
+                new Callback<com.workly.helpprovider.data.remote.ApiResponse<com.workly.helpprovider.data.model.ConfigResponse>>() {
+                    @Override
+                    public void onResponse(
+                            Call<com.workly.helpprovider.data.remote.ApiResponse<com.workly.helpprovider.data.model.ConfigResponse>> call,
+                            Response<com.workly.helpprovider.data.remote.ApiResponse<com.workly.helpprovider.data.model.ConfigResponse>> response) {
+                        long interval = 30 * 60 * 1000; // Default 30 mins
+                        if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                            interval = response.body().getData().getLocationUpdateIntervalMinutes() * 60 * 1000L;
+                        }
+                        locationHelper.startLocationUpdates(interval);
+                    }
+
+                    @Override
+                    public void onFailure(
+                            Call<com.workly.helpprovider.data.remote.ApiResponse<com.workly.helpprovider.data.model.ConfigResponse>> call,
+                            Throwable t) {
+                        locationHelper.startLocationUpdates(30 * 60 * 1000); // Default fallback
+                    }
+                });
 
         return START_STICKY;
     }

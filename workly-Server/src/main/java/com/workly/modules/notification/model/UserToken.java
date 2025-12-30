@@ -9,6 +9,13 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @EqualsAndHashCode(callSuper = true)
 @Document(collection = "user_tokens")
 public class UserToken extends MongoBaseEntity {
+    @org.springframework.data.annotation.Id
+    private String id;
+
     private String mobileNumber; // Identifying the user
     private String fcmToken;
+
+    private String configVersion;
+    private Long lastConfigNotificationTime;
+    private Long lastSyncedTime;
 }

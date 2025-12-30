@@ -17,7 +17,7 @@ Workly is a hyper-local blue-collar job marketplace that connects service seeker
 ## 🚀 Quick Start
 
 ### 1. Infrastructure
-Spin up the required databases and message brokers:
+Spin up the required databases and message brokers (**Run from Project Root**):
 ```bash
 docker-compose -f docker/docker-compose.yml up -d --build
 ```

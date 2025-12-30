@@ -25,6 +25,9 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     @Inject
     AuthManager authManager;
 
+    @Inject
+    com.workly.helpprovider.data.config.ConfigManager configManager;
+
     @Override
     public void onNewToken(@NonNull String token) {
         Log.d(TAG, "Refreshed token: " + token);
@@ -58,6 +61,12 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         // Check if message contains a data payload.
         if (remoteMessage.getData().size() > 0) {
             Log.d(TAG, "Message data payload: " + remoteMessage.getData());
+
+            String title = remoteMessage.getData().get("title");
+            if ("CONFIG_UPDATE".equals(title) || "CONFIG_UPDATE".equals(remoteMessage.getData().get("type"))) {
+                Log.d(TAG, "Received Config Update Notification");
+                configManager.syncConfig();
+            }
 
             if (/* Check if data needs to be processed by long running job */ false) {
                 // For long-running tasks (10 seconds or more) use WorkManager.

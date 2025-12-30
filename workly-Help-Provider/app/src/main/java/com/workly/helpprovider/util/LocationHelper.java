@@ -37,9 +37,9 @@ public class LocationHelper {
     }
 
     @SuppressLint("MissingPermission")
-    public void startLocationUpdates() {
-        LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 30 * 60 * 1000)
-                .setMinUpdateIntervalMillis(15 * 60 * 1000)
+    public void startLocationUpdates(long intervalMillis) {
+        LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, intervalMillis)
+                .setMinUpdateIntervalMillis(intervalMillis / 2)
                 .build();
 
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null);

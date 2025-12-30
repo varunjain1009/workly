@@ -24,6 +24,10 @@ spring:
     password: password
     driver-class-name: org.postgresql.Driver
 
+  config:
+    sync:
+      notification-interval-hours: 1
+
   kafka:
     bootstrap-servers: 127.0.0.1:9094
     consumer:
@@ -66,3 +70,23 @@ auth:
   token:
     ttl-hours: 24
     secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+
+custom:
+  location:
+    update-interval-minutes: 60
+  auth:
+    otp:
+      resend-delay-seconds: 300
+  app:
+    debug-enabled: true
+  job:
+    max-radius-km: 50
+    min-advance-hours: 2
+  assignment:
+    mode: FIRST_ACCEPT
+  monetisation:
+    enabled: false
+    model: PER_JOB
+    allow-browse-without-payment: true
+  chat:
+    url: ws://10.0.2.2:8082/ws/chat

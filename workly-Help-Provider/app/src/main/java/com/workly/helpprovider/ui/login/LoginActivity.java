@@ -23,7 +23,10 @@ public class LoginActivity extends AppCompatActivity {
     private ActivityLoginBinding binding;
     private LoginViewModel viewModel;
     private CountDownTimer countDownTimer;
-    private final long resendDelayMs = 300000;
+    // private final long resendDelayMs = 300000; // Removed final/hardcoded
+
+    @javax.inject.Inject
+    com.workly.helpprovider.data.config.ConfigManager configManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,8 +36,22 @@ public class LoginActivity extends AppCompatActivity {
 
         viewModel = new ViewModelProvider(this).get(LoginViewModel.class);
 
+        // Fetch config
+        configManager.fetchConfig();
+        // Ideally observe or wait, but similar to Seeker app, we just trigger it.
+        // We will update local delay variable if config is ready when needed or check
+        // accessor.
+
         setupListeners();
         observeViewModel();
+    }
+
+    // Helper to get delay dynamically
+    private long getResendDelayMs() {
+        if (configManager.getConfig() != null) {
+            return configManager.getConfig().getOtpResendDelaySeconds() * 1000L;
+        }
+        return 300000; // Default
     }
 
     private void setupListeners() {
@@ -124,7 +141,7 @@ public class LoginActivity extends AppCompatActivity {
             countDownTimer.cancel();
 
         binding.btnSendOtp.setEnabled(false);
-        countDownTimer = new CountDownTimer(resendDelayMs, 1000) {
+        countDownTimer = new CountDownTimer(getResendDelayMs(), 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
                 long minutes = (millisUntilFinished / 1000) / 60;
