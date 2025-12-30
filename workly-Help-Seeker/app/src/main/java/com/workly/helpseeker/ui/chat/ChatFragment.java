@@ -11,7 +11,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.workly.helpseeker.databinding.FragmentChatBinding;
-import com.workly.helpseeker.data.local.AuthManager;
+import com.workly.helpseeker.data.auth.AuthManager;
 import dagger.hilt.android.AndroidEntryPoint;
 import javax.inject.Inject;
 
