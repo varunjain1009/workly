@@ -61,6 +61,27 @@ npm run dev
 *   Update `src/main/assets/config.properties` if testing on a physical device (default is `10.0.2.2` for emulator).
 *   Run `workly-Help-Seeker` or `workly-Help-Provider`.
 
+### 5. Unified Local Debugging (VS Code)
+**Prerequisites**: Docker Desktop, VS Code, Java Extension Pack.
+
+The project includes a **"One Click" Debug setup** that runs all services (`Server`, `Chat`, `Search`, `Config`) simultaneously and attaches the debugger to each.
+
+1.  Open Project in **VS Code**.
+2.  Go to **Run and Debug** (`Ctrl+Shift+D`).
+3.  Select **"Debug All Services"** from the dropdown loop.
+4.  Press **F5**.
+
+**What happens?**
+*   **Infrastructure**: VS Code automatically starts Redis, Mongo, Postgres, Kafka, Elastic via `docker-compose-dev.yml`.
+*   **Services**: All 4 microservices start in parallel.
+*   **Debug**: Breakpoints work in any service instantly.
+
+### 6. Infrastructure Only
+If you prefer running services from command line but need databases:
+```bash
+docker-compose -f docker-compose-dev.yml up -d
+```
+
 ## 📖 Documentation
 *   **[Architecture Guide](ARCHITECTURE.md)**: System design, diagrams, and data flow.
 *   **[API Reference](API.md)**: REST endpoints and WebSocket protocols.
