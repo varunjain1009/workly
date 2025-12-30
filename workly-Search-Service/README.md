@@ -13,7 +13,7 @@ This is handled automatically by the root `docker-compose-dev.yml`.
 ### Running Locally
 ```bash
 # Build the infrastructure first
-docker-compose -f ../docker-compose-dev.yml up -d --build
+docker-compose -f ../docker/docker-compose.yml up -d --build
 
 # Run the service
 ./gradlew :search-service:bootRun

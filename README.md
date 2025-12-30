@@ -19,10 +19,10 @@ Workly is a hyper-local blue-collar job marketplace that connects service seeker
 ### 1. Infrastructure
 Spin up the required databases and message brokers:
 ```bash
-cd workly-Server/docker
-docker-compose -f docker-compose-dev.yml up -d --build
+docker-compose -f docker/docker-compose.yml up -d --build
 ```
-*Note: The first run will build a custom Elasticsearch image with the `analysis-phonetic` plugin installed.*
+> **Important**: Use `docker/docker-compose.yml`. It is the **unified** configuration that includes the custom Elasticsearch build (with plugins) required by the Search Service.
+
 This starts:
 *   **MongoDB**: Primary Data & Chat Logs
 *   **PostgreSQL**: Billing & Subscriptions
