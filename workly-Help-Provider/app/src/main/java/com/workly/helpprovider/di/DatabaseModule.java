@@ -27,4 +27,9 @@ public class DatabaseModule {
     public ChatMessageDao provideChatMessageDao(WorklyProviderDatabase database) {
         return database.chatMessageDao();
     }
+
+    @Provides
+    public com.workly.helpprovider.data.local.ProfileDao provideProfileDao(WorklyProviderDatabase database) {
+        return database.profileDao();
+    }
 }

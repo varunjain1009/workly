@@ -76,6 +76,25 @@ sequenceDiagram
     Server-->>App: Results for "Carpenter"
 ```
 
+### Technical Implementation Details
+
+Based on the `AutocompleteService` and `SkillDocument` implementation:
+
+1.  **Index Structure (`skills_index`)**:
+    *   **Documents**: Each skill is a document containing a `canonicalName` (e.g., "Electrician") and a list of `aliases` (e.g., ["wiring expert", "lineman", "electrican"]).
+    *   **Mapping**: `aliases` are stored as a standard text field.
+
+2.  **Fuzzy Match Logic (Levenshtein)**:
+    The search query in `AutocompleteService.searchInElasticsearch` constructs a **Boolean OR** criteria that attempts to match in three ways simultaneously:
+    *   **Prefix Match**: `Criteria("canonicalName").contains(query)` - Finds exact substring matches.
+    *   **Fuzzy Match**: `Criteria("canonicalName").fuzzy(query)` - Applies Edit Distance (Levenshtein). ElasticSearch's default `AUTO` setting is used:
+        *   **0 edits** allowed for strings < 3 characters.
+        *   **1 edit** allowed for strings 3-5 characters.
+        *   **2 edits** allowed for strings > 5 characters.
+    *   **Alias Match**: `Criteria("aliases").is(query)` - Checks the `aliases` array for a match.
+
+This approach ensures that "plumer" matches "Plumber" (via Fuzzy) and "wiring expert" matches "Electrician" (via Alias) in a single query execution.
+
 ## Module Responsibilities
 
 ### 1. Core Server (`workly-Server`)

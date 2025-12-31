@@ -18,10 +18,11 @@ public class SyncWorker extends Worker {
     @Override
     public Result doWork() {
         AuthManager authManager = new AuthManager(getApplicationContext());
-        if (!authManager.isSessionValid())
+        if (!authManager.isLoggedIn())
             return Result.failure();
 
-        // ApiService apiService = ApiClient.getService(authManager, getApplicationContext()); // TODO: Fix
+        // ApiService apiService = ApiClient.getService(authManager,
+        // getApplicationContext()); // TODO: Fix
         // Implementation for periodic sync (e.g., fetching latest job requests or
         // profile updates)
 
