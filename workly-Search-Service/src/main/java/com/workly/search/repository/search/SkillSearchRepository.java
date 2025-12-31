@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SkillSearchRepository extends ElasticsearchRepository<SkillDocument, String> {
+    java.util.Optional<SkillDocument> findByCanonicalName(String canonicalName);
 }

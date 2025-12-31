@@ -12,6 +12,7 @@ public class SkillController {
 
     private final SkillSyncService skillSyncService;
     private final AutocompleteService autocompleteService;
+    private final com.workly.search.repository.search.SkillSearchRepository skillSearchRepository;
 
     @PostMapping("/sync")
     public String syncSkills() {
@@ -22,5 +23,11 @@ public class SkillController {
     @GetMapping("/autocomplete")
     public java.util.List<String> autocomplete(@RequestParam String query) {
         return autocompleteService.autocomplete(query);
+    }
+
+    @GetMapping("/{name}")
+    public com.workly.search.model.SkillDocument getSkillByName(@PathVariable String name) {
+        return skillSearchRepository.findByCanonicalName(name)
+                .orElseThrow(() -> new RuntimeException("Skill not found: " + name));
     }
 }
