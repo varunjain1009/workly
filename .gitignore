@@ -11,6 +11,10 @@ ehthumbs.db
 Desktop.ini
 
 workly-Search-Service/bin/*
+workly-Server/bin/*
+workly-Config-Service/bin/*
+workly-Chat-Service/bin/*
+
 ############################################
 # IDE / EDITOR FILES
 ############################################
