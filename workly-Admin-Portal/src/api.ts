@@ -60,3 +60,39 @@ export const getSkills = async () => {
 export const addAliases = async (skillName: string, aliases: string[]) => {
     return api.post(`/skills/${skillName}/aliases`, aliases);
 }
+
+export interface DashboardStats {
+    totalUsers: number;
+    newUsersToday: number;
+    activeJobs: number;
+    completedJobs: number;
+    revenue: number;
+    userGrowth: { label: string; value: number }[];
+    jobStatusDistribution: Record<string, number>;
+}
+
+export const getDashboardStats = async () => {
+    return api.get<DashboardStats>('/analytics/dashboard');
+}
+
+export interface QueryRequest {
+    type: 'SQL' | 'MONGO';
+    query: string;
+    collection?: string;
+}
+
+export const executeReport = async (req: QueryRequest) => {
+    return api.post<any[]>('/reports/execute', req);
+}
+
+export const getSqlSchema = async () => {
+    return api.get<Record<string, string[]>>('/reports/schema/sql');
+}
+
+export const getMongoCollections = async () => {
+    return api.get<string[]>('/reports/schema/mongo');
+}
+
+export const getMongoSample = async (collection: string) => {
+    return api.get<any>(`/reports/schema/mongo/${collection}/sample`);
+}

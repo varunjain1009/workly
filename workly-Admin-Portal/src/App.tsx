@@ -1,13 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { Settings, Activity, LayoutDashboard, Database } from 'lucide-react';
+import { Settings, Activity, LayoutDashboard, Database, BarChart2 } from 'lucide-react';
 import { useState } from 'react';
 
 import Configs from './pages/Configs';
 import AuditLogs from './pages/AuditLogs';
 import Skills from './pages/Skills';
-
-// Placeholders for components
-const Dashboard = () => <div className="p-6"><h1 className="text-2xl font-bold">Dashboard</h1><p>System Overview</p></div>;
+import Dashboard from './pages/Dashboard';
+import CustomReports from './pages/CustomReports';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -44,6 +43,11 @@ function App() {
               <Activity size={20} />
               Audit Logs
             </Link>
+            <Link to="/reports" onClick={() => setActiveTab('reports')}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'reports' ? 'bg-blue-600' : 'hover:bg-slate-800'}`}>
+              <BarChart2 size={20} />
+              Reports
+            </Link>
           </nav>
           <div className="p-4 border-t border-slate-700">
             <div className="flex items-center gap-3">
@@ -63,6 +67,7 @@ function App() {
             <Route path="/skills" element={<Skills />} />
             <Route path="/configs" element={<Configs />} />
             <Route path="/audit" element={<AuditLogs />} />
+            <Route path="/reports" element={<CustomReports />} />
           </Routes>
         </main>
       </div>

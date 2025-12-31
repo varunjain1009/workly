@@ -16,4 +16,9 @@ public class WorklyServerApplication {
     public static void main(String[] args) {
         SpringApplication.run(WorklyServerApplication.class, args);
     }
+
+    @org.springframework.context.annotation.Bean
+    public org.springframework.web.client.RestTemplate restTemplate() {
+        return new org.springframework.web.client.RestTemplate();
+    }
 }
