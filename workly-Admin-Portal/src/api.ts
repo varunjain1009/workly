@@ -44,3 +44,19 @@ export const rollbackConfig = async (key: string, scope: string, version: number
     params.append('adminId', adminId);
     return api.post(`/configs/${key}/rollback`, params);
 }
+
+export interface Skill {
+    id: string;
+    canonicalName: string;
+    aliases: string[];
+    phonetic: string;
+    status: string;
+}
+
+export const getSkills = async () => {
+    return api.get<Skill[]>('/skills');
+}
+
+export const addAliases = async (skillName: string, aliases: string[]) => {
+    return api.post(`/skills/${skillName}/aliases`, aliases);
+}

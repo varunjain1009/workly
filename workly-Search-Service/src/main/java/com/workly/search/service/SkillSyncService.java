@@ -49,6 +49,33 @@ public class SkillSyncService {
         skillRepository.save(skill);
     }
 
+    public List<Skill> getAllSkills() {
+        return skillRepository.findAll();
+    }
+
+    public void addAliases(String canonicalName, List<String> newAliases) {
+        Skill skill = skillRepository.findByCanonicalName(canonicalName)
+                .orElseThrow(() -> new RuntimeException("Skill not found: " + canonicalName));
+
+        List<String> currentAliases = skill.getAliases();
+        if (currentAliases == null) {
+            currentAliases = new java.util.ArrayList<>();
+        }
+
+        for (String alias : newAliases) {
+            if (!currentAliases.contains(alias)) {
+                currentAliases.add(alias);
+            }
+        }
+
+        skill.setAliases(currentAliases);
+        skillRepository.save(skill);
+
+        // Sync to Elastic
+        skillSearchRepository.save(toDocument(skill));
+        log.info("Added aliases {} to skill {}", newAliases, canonicalName);
+    }
+
     private SkillDocument toDocument(Skill skill) {
         SkillDocument doc = new SkillDocument();
         doc.setId(skill.getId());

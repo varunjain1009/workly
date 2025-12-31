@@ -30,4 +30,14 @@ public class SkillController {
         return skillSearchRepository.findByCanonicalName(name)
                 .orElseThrow(() -> new RuntimeException("Skill not found: " + name));
     }
+
+    @GetMapping
+    public java.util.List<com.workly.search.model.Skill> getAllSkills() {
+        return skillSyncService.getAllSkills();
+    }
+
+    @PostMapping("/{name}/aliases")
+    public void addAliases(@PathVariable String name, @RequestBody java.util.List<String> aliases) {
+        skillSyncService.addAliases(name, aliases);
+    }
 }
