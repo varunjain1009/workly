@@ -58,6 +58,8 @@ public class AnalyticsService {
 
         return DashboardStats.builder()
                 .totalUsers(totalUsers)
+                .totalSeekers(totalSeekers)
+                .totalWorkers(totalWorkers)
                 .newUsersToday(newUsersToday)
                 .activeJobs(activeJobs)
                 .completedJobs(completedJobs)

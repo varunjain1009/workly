@@ -64,16 +64,16 @@ public class MainViewModel extends ViewModel {
     }
 
     public void setAvailability(boolean isAvailable) {
-        profileRepository.updateAvailability(isAvailable, new Callback<Map<String, Object>>() {
+        profileRepository.updateAvailability(isAvailable, new Callback<ApiResponse<Void>>() {
             @Override
-            public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
+            public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
                 if (response.isSuccessful()) {
                     availabilityUpdated.setValue(true);
                 }
             }
 
             @Override
-            public void onFailure(Call<Map<String, Object>> call, Throwable t) {
+            public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
                 // handle error
             }
         });

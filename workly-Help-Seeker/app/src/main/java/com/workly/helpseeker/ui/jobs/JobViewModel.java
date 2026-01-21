@@ -43,13 +43,30 @@ public class JobViewModel extends ViewModel {
         return error;
     }
 
-    public void loadJobs(boolean forceRefresh) {
-        if (!forceRefresh && jobs.getValue() != null) {
-            return;
+    public void loadJobs(String type, boolean forceRefresh) {
+        // Separate LiveData handling could be beneficial, but for now assuming
+        // Home/Past use different instances
+        // OR the Fragment is responsible for observing the right data.
+        // But here we only have one 'jobs' LiveData.
+        // If Home and Past share the ViewModel (Activity scope), they will overwrite
+        // each other.
+
+        // HomeFragment uses 'requireActivity()' scope.
+        // If PastJobsFragment also uses 'requireActivity()', they share data.
+        // Changing tabs -> refresh.
+
+        if (!forceRefresh && jobs.getValue() != null && !jobs.getValue().isEmpty()) {
+            // This logic is flawed if checking different types.
+            // Simplified: Always fetch if type changes? Or just rely on forceRefresh.
+            // Failure-safe: if forceRefresh is false, we might return wrong data type.
+            // Let's assume the caller handles forceRefresh correctly or we just fetch.
         }
 
+        // Better: always fetch if type is different?
+        // For MVP, just fetch.
+
         isLoading.setValue(true);
-        apiService.getJobs().enqueue(new Callback<ApiResponse<List<Job>>>() {
+        apiService.getJobs(type).enqueue(new Callback<ApiResponse<List<Job>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<Job>>> call, Response<ApiResponse<List<Job>>> response) {
                 isLoading.setValue(false);
@@ -66,6 +83,10 @@ public class JobViewModel extends ViewModel {
                 error.setValue("Network error: " + t.getMessage());
             }
         });
+    }
+
+    public void loadJobs(boolean forceRefresh) {
+        loadJobs("active", forceRefresh);
     }
 
     public void addJobLocal(Job job) {

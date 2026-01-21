@@ -12,6 +12,8 @@ public interface JobRepository extends MongoRepository<Job, String> {
 
     List<Job> findByStatusIn(List<JobStatus> statuses);
 
+    List<Job> findBySeekerMobileNumberAndStatusIn(String mobileNumber, List<JobStatus> statuses);
+
     long countByStatus(JobStatus status);
 
     long countByStatusIn(List<JobStatus> statuses);

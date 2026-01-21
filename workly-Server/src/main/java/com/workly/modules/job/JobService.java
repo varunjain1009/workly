@@ -95,13 +95,33 @@ public class JobService {
         return savedJob;
     }
 
-    public List<Job> getSeekerJobs(String mobileNumber) {
-        log.debug("Fetching seeker jobs from database for mobile: {}", mobileNumber);
-        List<Job> jobs = jobRepository.findBySeekerMobileNumber(mobileNumber);
-        if (jobs.isEmpty()) {
-            log.info("No jobs found in database for seeker mobile: {}", mobileNumber);
+    public List<Job> getSeekerJobs(String mobileNumber, String type) {
+        log.debug("Fetching seeker jobs from database for mobile: {}, type: {}", mobileNumber, type);
+        List<Job> jobs;
+
+        if ("active".equalsIgnoreCase(type)) {
+            List<JobStatus> activeStatuses = List.of(
+                    JobStatus.CREATED,
+                    JobStatus.BROADCASTED,
+                    JobStatus.SCHEDULED,
+                    JobStatus.PENDING_ACCEPTANCE,
+                    JobStatus.ASSIGNED);
+            jobs = jobRepository.findBySeekerMobileNumberAndStatusIn(mobileNumber, activeStatuses);
+        } else if ("past".equalsIgnoreCase(type)) {
+            List<JobStatus> pastStatuses = List.of(
+                    JobStatus.COMPLETED,
+                    JobStatus.CANCELLED,
+                    JobStatus.EXPIRED);
+            jobs = jobRepository.findBySeekerMobileNumberAndStatusIn(mobileNumber, pastStatuses);
         } else {
-            log.info("Found {} jobs in database for seeker mobile: {}", jobs.size(), mobileNumber);
+            jobs = jobRepository.findBySeekerMobileNumber(mobileNumber);
+        }
+
+        if (jobs.isEmpty()) {
+            log.info("No {} jobs found in database for seeker mobile: {}", type != null ? type : "all", mobileNumber);
+        } else {
+            log.info("Found {} {} jobs in database for seeker mobile: {}", jobs.size(), type != null ? type : "all",
+                    mobileNumber);
         }
         return jobs;
     }

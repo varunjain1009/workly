@@ -79,7 +79,7 @@ class JobControllerTest {
         Job job = new Job();
         job.setTitle("Seeker Job");
 
-        when(jobService.getSeekerJobs("1234567890")).thenReturn(Collections.singletonList(job));
+        when(jobService.getSeekerJobs(eq("1234567890"), any())).thenReturn(Collections.singletonList(job));
 
         mockMvc.perform(get("/api/v1/jobs/seeker"))
                 .andExpect(status().isOk())

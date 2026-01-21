@@ -18,6 +18,7 @@ public class AuthController {
 
     private final OtpService otpService;
     private final JwtUtils jwtUtils;
+    private final com.workly.modules.profile.ProfileService profileService;
 
     @Value("${auth.token.ttl-hours}")
     private int ttlHours;
@@ -36,6 +37,15 @@ public class AuthController {
         if (!isValid) {
             log.warn("Login failed for mobile: {} - Invalid or expired OTP", request.getMobileNumber());
             throw WorklyException.unauthorized("Invalid or expired OTP");
+        }
+
+        // Ensure Seeker Profile exists (Implicit Registration)
+        if (profileService.getSeekerProfile(request.getMobileNumber()).isEmpty()) {
+            log.info("Creating default seeker profile for mobile: {}", request.getMobileNumber());
+            com.workly.modules.profile.SkillSeekerProfile profile = new com.workly.modules.profile.SkillSeekerProfile();
+            profile.setMobileNumber(request.getMobileNumber());
+            profile.setCreatedAt(java.time.LocalDateTime.now());
+            profileService.createOrUpdateSeekerProfile(profile);
         }
 
         log.info("Login successful for mobile: {}. Generating token.", request.getMobileNumber());

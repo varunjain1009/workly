@@ -1,0 +1,129 @@
+package com.workly.helpprovider.data.repository;
+
+import androidx.lifecycle.LiveData;
+import com.workly.helpprovider.data.local.ProfileDao;
+import com.workly.helpprovider.data.model.Profile;
+import com.workly.helpprovider.data.remote.ApiService;
+import com.workly.helpprovider.data.remote.ApiResponse;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
+public class ProfileRepository {
+    private final ProfileDao profileDao;
+    private final ApiService apiService;
+    private final ExecutorService executorService;
+
+    @Inject
+    public ProfileRepository(ProfileDao profileDao, ApiService apiService) {
+        this.profileDao = profileDao;
+        this.apiService = apiService;
+        this.executorService = Executors.newSingleThreadExecutor();
+    }
+
+    public LiveData<Profile> getProfile() {
+        refreshProfile();
+        return profileDao.getProfile();
+    }
+
+    private void refreshProfile() {
+        apiService.getProfile().enqueue(new Callback<ApiResponse<Profile>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Profile>> call, Response<ApiResponse<Profile>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                    Profile p = response.body().getData();
+                    // Sync skills list back to expertise string
+                    if (p.getSkills() != null && !p.getSkills().isEmpty()) {
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < p.getSkills().size(); i++) {
+                            sb.append(p.getSkills().get(i));
+                            if (i < p.getSkills().size() - 1) {
+                                sb.append(", ");
+                            }
+                        }
+                        p.setExpertise(sb.toString());
+                    }
+                    executorService.execute(() -> profileDao.insertProfile(p));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<Profile>> call, Throwable t) {
+                // Log or handle failure
+            }
+        });
+    }
+
+    public void updateProfile(Profile profile) {
+        apiService.updateProfile(profile).enqueue(new Callback<ApiResponse<Profile>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Profile>> call, Response<ApiResponse<Profile>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                    Profile p = response.body().getData();
+                    // Sync skills list back to expertise string
+                    if (p.getSkills() != null && !p.getSkills().isEmpty()) {
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < p.getSkills().size(); i++) {
+                            sb.append(p.getSkills().get(i));
+                            if (i < p.getSkills().size() - 1) {
+                                sb.append(", ");
+                            }
+                        }
+                        p.setExpertise(sb.toString());
+                    }
+                    executorService.execute(() -> profileDao.insertProfile(p));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<Profile>> call, Throwable t) {
+                // Handle failure
+            }
+        });
+    }
+
+    public void updateAvailability(boolean isAvailable, Callback<ApiResponse<Void>> callback) {
+        apiService.updateAvailability(isAvailable).enqueue(new Callback<ApiResponse<Void>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
+                if (response.isSuccessful()) {
+                    executorService.execute(() -> profileDao.updateAvailability(isAvailable));
+                }
+                callback.onResponse(call, response);
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
+                callback.onFailure(call, t);
+            }
+        });
+    }
+
+    public void updateDeviceToken(String token) {
+        java.util.Map<String, String> tokenMap = java.util.Collections.singletonMap("token", token);
+        apiService.updateDeviceToken(tokenMap)
+                .enqueue(new Callback<com.workly.helpprovider.data.remote.ApiResponse<Void>>() {
+                    @Override
+                    public void onResponse(Call<com.workly.helpprovider.data.remote.ApiResponse<Void>> call,
+                            Response<com.workly.helpprovider.data.remote.ApiResponse<Void>> response) {
+                        // Token updated
+                    }
+
+                    @Override
+                    public void onFailure(Call<com.workly.helpprovider.data.remote.ApiResponse<Void>> call,
+                            Throwable t) {
+                        // Fail
+                    }
+                });
+    }
+
+    public void getWorkerAverageRating(String mobileNumber, Callback<ApiResponse<Double>> callback) {
+        apiService.getAverageRating(mobileNumber).enqueue(callback);
+    }
+}

@@ -34,6 +34,15 @@ public class ProfileViewModel extends ViewModel {
 
     public void updateProfile(Profile profile) {
         isLoading.setValue(true);
+        if (profile.getExpertise() != null && !profile.getExpertise().trim().isEmpty()) {
+            java.util.List<String> skillsList = java.util.Arrays.asList(profile.getExpertise().split(","));
+            // Trim each skill
+            java.util.List<String> trimmedSkills = new java.util.ArrayList<>();
+            for (String s : skillsList) {
+                trimmedSkills.add(s.trim());
+            }
+            profile.setSkills(trimmedSkills);
+        }
         profileRepository.updateProfile(profile);
         // Repository update is async but doesn't have a callback in current interface
         // for success/fail
@@ -72,23 +81,25 @@ public class ProfileViewModel extends ViewModel {
 
     public void updateAvailability(boolean isAvailable) {
         isLoading.setValue(true);
-        profileRepository.updateAvailability(isAvailable, new retrofit2.Callback<java.util.Map<String, Object>>() {
-            @Override
-            public void onResponse(retrofit2.Call<java.util.Map<String, Object>> call,
-                    retrofit2.Response<java.util.Map<String, Object>> response) {
-                isLoading.setValue(false);
-                if (response.isSuccessful()) {
-                    statusMessage.setValue("Availability updated");
-                } else {
-                    statusMessage.setValue("Failed to update availability");
-                }
-            }
+        profileRepository.updateAvailability(isAvailable,
+                new retrofit2.Callback<com.workly.helpprovider.data.remote.ApiResponse<Void>>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<com.workly.helpprovider.data.remote.ApiResponse<Void>> call,
+                            retrofit2.Response<com.workly.helpprovider.data.remote.ApiResponse<Void>> response) {
+                        isLoading.setValue(false);
+                        if (response.isSuccessful()) {
+                            statusMessage.setValue("Availability updated");
+                        } else {
+                            statusMessage.setValue("Failed to update availability");
+                        }
+                    }
 
-            @Override
-            public void onFailure(retrofit2.Call<java.util.Map<String, Object>> call, Throwable t) {
-                isLoading.setValue(false);
-                statusMessage.setValue("Error updating availability");
-            }
-        });
+                    @Override
+                    public void onFailure(retrofit2.Call<com.workly.helpprovider.data.remote.ApiResponse<Void>> call,
+                            Throwable t) {
+                        isLoading.setValue(false);
+                        statusMessage.setValue("Error updating availability");
+                    }
+                });
     }
 }

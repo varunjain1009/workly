@@ -50,6 +50,8 @@ public class WorkerDiscoveryFragment extends Fragment {
         return binding.getRoot();
     }
 
+    private com.workly.helpseeker.data.model.Job pendingJob;
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -60,11 +62,25 @@ public class WorkerDiscoveryFragment extends Fragment {
         setupRecyclerView();
 
         if (getArguments() != null) {
-            String skill = getArguments().getString("skill");
-            int radius = getArguments().getInt("radius", 10);
-            if (debugEnabled)
-                Log.d(TAG, "Searching for: " + skill + " within " + radius + "km");
-            searchWorkers(skill, radius);
+            if (getArguments().containsKey("job")) {
+                pendingJob = (com.workly.helpseeker.data.model.Job) getArguments().getSerializable("job");
+                if (pendingJob != null) {
+                    if (debugEnabled)
+                        Log.d(TAG, "Loaded Pending Job: " + pendingJob.getTitle());
+                    searchWorkers(pendingJob.getRequiredSkill(), pendingJob.getSearchRadiusKm());
+                }
+            } else {
+                // Fallback / Backward compatibility
+                String skill = getArguments().getString("skill");
+                int radius = getArguments().getInt("radius", 10);
+                if (skill != null) {
+                    if (debugEnabled)
+                        Log.d(TAG, "Searching for: " + skill + " within " + radius + "km");
+                    searchWorkers(skill, radius);
+                } else {
+                    loadDummyWorkers();
+                }
+            }
         } else {
             loadDummyWorkers();
         }
@@ -80,11 +96,27 @@ public class WorkerDiscoveryFragment extends Fragment {
                     List<Worker> workers = response.body().getData();
                     if (debugEnabled)
                         Log.d(TAG, "Found " + (workers != null ? workers.size() : 0) + " workers");
-                    adapter.setWorkers(workers != null ? workers : new ArrayList<>());
+
+                    if (workers == null || workers.isEmpty()) {
+                        // No workers found
+                        binding.rvWorkers.setVisibility(View.GONE);
+                        binding.layoutNoWorkers.setVisibility(View.VISIBLE);
+
+                        // Set current value to slider if needed (only once or always?)
+                        // binding.sliderRadius.setValue((float) radius);
+                        // Updating label
+                        binding.tvRadiusLabel.setText("Search Radius: " + radius + " km");
+                    } else {
+                        // Workers found
+                        binding.rvWorkers.setVisibility(View.VISIBLE);
+                        binding.layoutNoWorkers.setVisibility(View.GONE);
+                        adapter.setWorkers(workers);
+                    }
                 } else {
                     if (debugEnabled)
                         Log.e(TAG, "Search failed. Status: " + response.code());
                     Toast.makeText(getContext(), "Failed to find workers", Toast.LENGTH_SHORT).show();
+                    // Optional: Show empty state on error too?
                 }
             }
 
@@ -99,11 +131,60 @@ public class WorkerDiscoveryFragment extends Fragment {
 
     private void setupRecyclerView() {
         adapter = new WorkerAdapter(worker -> {
-            Toast.makeText(getContext(), "Selected: " + worker.getName(), Toast.LENGTH_SHORT).show();
-            // TODO: Navigate or perform assignment
+            if (pendingJob != null) {
+                confirmAndPostJob(worker);
+            } else {
+                Toast.makeText(getContext(), "Selected: " + worker.getName(), Toast.LENGTH_SHORT).show();
+            }
         });
         binding.rvWorkers.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.rvWorkers.setAdapter(adapter);
+
+        // Setup Slider and Button for No Workers State
+        binding.sliderRadius.addOnChangeListener((slider, value, fromUser) -> {
+            binding.tvRadiusLabel.setText("Search Radius: " + (int) value + " km");
+        });
+
+        binding.btnSearchAgain.setOnClickListener(v -> {
+            int newRadius = (int) binding.sliderRadius.getValue();
+            String skill = "";
+
+            if (pendingJob != null) {
+                skill = pendingJob.getRequiredSkill();
+                pendingJob.setSearchRadiusKm(newRadius);
+            } else if (getArguments() != null) {
+                skill = getArguments().getString("skill", "");
+            }
+
+            if (!skill.isEmpty()) {
+                searchWorkers(skill, newRadius);
+            }
+        });
+    }
+
+    private void confirmAndPostJob(Worker worker) {
+        pendingJob.setWorkerId(worker.getId());
+        pendingJob.setAssignmentMode(com.workly.helpseeker.data.model.AssignmentMode.MANUAL_SELECT);
+
+        apiService.postJob(pendingJob).enqueue(new Callback<ApiResponse<com.workly.helpseeker.data.model.Job>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<com.workly.helpseeker.data.model.Job>> call,
+                    Response<ApiResponse<com.workly.helpseeker.data.model.Job>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Toast.makeText(getContext(), "Job Sent to " + worker.getName(), Toast.LENGTH_SHORT).show();
+                    // Navigate back to home or jobs list
+                    // We could also navigate to a status fragment
+                    requireActivity().onBackPressed(); // Or navigate to dashboard
+                } else {
+                    Toast.makeText(getContext(), "Failed to create job", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<com.workly.helpseeker.data.model.Job>> call, Throwable t) {
+                Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void loadDummyWorkers() {

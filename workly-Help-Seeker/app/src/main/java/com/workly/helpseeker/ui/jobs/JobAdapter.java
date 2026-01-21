@@ -29,9 +29,7 @@ public class JobAdapter extends RecyclerView.Adapter<JobAdapter.JobViewHolder> {
         this.jobs = new ArrayList<>();
         if (jobs != null) {
             for (Job job : jobs) {
-                if (job.getStatus() != com.workly.helpseeker.data.model.JobStatus.CANCELLED) {
-                    this.jobs.add(job);
-                }
+                this.jobs.add(job);
             }
         }
         notifyDataSetChanged();

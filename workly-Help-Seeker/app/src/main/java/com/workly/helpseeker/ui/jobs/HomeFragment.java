@@ -54,6 +54,8 @@ public class HomeFragment extends Fragment {
         return binding.getRoot();
     }
 
+    private String currentJobType = "active";
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -61,7 +63,22 @@ public class HomeFragment extends Fragment {
 
         setupRecyclerView();
         observeViewModel();
-        viewModel.loadJobs(false);
+
+        binding.toggleJobType.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (isChecked) {
+                if (checkedId == R.id.btn_active) {
+                    currentJobType = "active";
+                    binding.tvEmptyState.setText("No active jobs found");
+                } else if (checkedId == R.id.btn_past) {
+                    currentJobType = "past";
+                    binding.tvEmptyState.setText("No past jobs found");
+                }
+                viewModel.loadJobs(currentJobType, true);
+            }
+        });
+
+        // Initial load
+        viewModel.loadJobs(currentJobType, false);
 
         binding.fabPostJob.setOnClickListener(v -> {
             Navigation.findNavController(v).navigate(R.id.action_home_to_postJob);
@@ -72,7 +89,7 @@ public class HomeFragment extends Fragment {
     public void onResume() {
         super.onResume();
         if (viewModel != null) {
-            viewModel.loadJobs(true);
+            viewModel.loadJobs(currentJobType, true);
         }
     }
 

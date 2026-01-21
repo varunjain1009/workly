@@ -80,7 +80,7 @@ class JobServiceTest {
         Job job = new Job();
         when(jobRepository.findBySeekerMobileNumber(mobile)).thenReturn(Collections.singletonList(job));
 
-        List<Job> result = jobService.getSeekerJobs(mobile);
+        List<Job> result = jobService.getSeekerJobs(mobile, null);
 
         assertEquals(1, result.size());
         verify(jobRepository).findBySeekerMobileNumber(mobile);

@@ -223,46 +223,60 @@ public class PostJobFragment extends Fragment {
                 : AssignmentMode.FIRST_ACCEPT;
         JobType type = binding.chipScheduled.isChecked() ? JobType.SCHEDULED : JobType.IMMEDIATE;
 
-        Job job = new Job(title, description, skill, new Location(0.0, 0.0, "Current Location"),
-                radius, System.currentTimeMillis(), type, mode);
-
-        apiService.postJob(job).enqueue(new Callback<ApiResponse<Job>>() {
-            @Override
-            public void onResponse(Call<ApiResponse<Job>> call, Response<ApiResponse<Job>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    if (debugEnabled)
-                        Log.d(TAG, "Job Posted Successfully. ID: " + response.body().getData().getId());
-                    Toast.makeText(getContext(), "Job Posted Successfully", Toast.LENGTH_SHORT).show();
-
-                    // Add to local ViewModel for immediate UI update
-                    jobViewModel.addJobLocal(response.body().getData());
-
-                    // Navigate to Worker Discovery ONLY if Immediate
-                    if (type == JobType.IMMEDIATE) {
-                        Bundle args = new Bundle();
-                        args.putString("skill", skill);
-                        args.putInt("radius", radius);
-                        args.putString("jobId", response.body().getData().getId());
-                        Navigation.findNavController(requireView()).navigate(R.id.action_postJob_to_workerDiscovery,
-                                args);
-                    } else {
-                        // For Scheduled jobs, just go back or to home
-                        requireActivity().onBackPressed();
-                    }
-                } else {
-                    if (debugEnabled)
-                        Log.e(TAG, "Failed to post job. Status: " + response.code());
-                    Toast.makeText(getContext(), "Failed to post job", Toast.LENGTH_SHORT).show();
+        long preferredTime = System.currentTimeMillis();
+        if (type == JobType.SCHEDULED) {
+            String date = binding.etDate.getText().toString();
+            String time = binding.etTime.getText().toString();
+            try {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm",
+                        java.util.Locale.getDefault());
+                java.util.Date scheduledDate = sdf.parse(date + " " + time);
+                if (scheduledDate != null) {
+                    preferredTime = scheduledDate.getTime();
                 }
+            } catch (Exception e) {
+                Log.e(TAG, "Error parsing date: " + e.getMessage());
             }
+        }
 
-            @Override
-            public void onFailure(Call<ApiResponse<Job>> call, Throwable t) {
-                if (debugEnabled)
-                    Log.e(TAG, "Network error posting job: " + t.getMessage(), t);
-                Toast.makeText(getContext(), "Network Error", Toast.LENGTH_SHORT).show();
-            }
-        });
+        Job job = new Job(title, description, skill, new Location(0.0, 0.0, "Current Location"),
+                radius, preferredTime, type, mode);
+
+        if (type == JobType.IMMEDIATE) {
+            // Defer posting, navigate to Worker Discovery with the Job object
+            Bundle args = new Bundle();
+            args.putSerializable("job", job);
+            Navigation.findNavController(requireView()).navigate(R.id.action_postJob_to_workerDiscovery, args);
+        } else {
+            // Scheduled Job - Post Immediately
+            apiService.postJob(job).enqueue(new Callback<ApiResponse<Job>>() {
+                @Override
+                public void onResponse(Call<ApiResponse<Job>> call, Response<ApiResponse<Job>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        if (debugEnabled)
+                            Log.d(TAG, "Job Posted Successfully. ID: " + response.body().getData().getId());
+                        Toast.makeText(getContext(), "Job Posted Successfully", Toast.LENGTH_SHORT).show();
+
+                        // Add to local ViewModel for immediate UI update
+                        jobViewModel.addJobLocal(response.body().getData());
+
+                        // For Scheduled jobs, just go back
+                        requireActivity().onBackPressed();
+                    } else {
+                        if (debugEnabled)
+                            Log.e(TAG, "Failed to post job. Status: " + response.code());
+                        Toast.makeText(getContext(), "Failed to post job", Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ApiResponse<Job>> call, Throwable t) {
+                    if (debugEnabled)
+                        Log.e(TAG, "Network error posting job: " + t.getMessage(), t);
+                    Toast.makeText(getContext(), "Network Error", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
 
     @Override

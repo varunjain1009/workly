@@ -56,7 +56,7 @@ class ProfileServiceTest {
     void getWorkerProfile_ShouldReturnProfile() {
         String mobile = "123";
         WorkerProfile profile = new WorkerProfile();
-        when(workerRepository.findByMobileNumber(mobile)).thenReturn(Optional.of(profile));
+        when(workerRepository.findByMobileNumber(mobile)).thenReturn(java.util.List.of(profile));
 
         Optional<WorkerProfile> result = profileService.getWorkerProfile(mobile);
 
@@ -80,7 +80,7 @@ class ProfileServiceTest {
     void updateLocation_ShouldUpdateWhenProfileExists() {
         String mobile = "123";
         WorkerProfile profile = new WorkerProfile();
-        when(workerRepository.findByMobileNumber(mobile)).thenReturn(Optional.of(profile));
+        when(workerRepository.findByMobileNumber(mobile)).thenReturn(java.util.List.of(profile));
 
         profileService.updateLocation(mobile, 77.0, 12.0);
 
@@ -92,7 +92,7 @@ class ProfileServiceTest {
     void updateAvailability_ShouldUpdateWhenProfileExists() {
         String mobile = "123";
         WorkerProfile profile = new WorkerProfile();
-        when(workerRepository.findByMobileNumber(mobile)).thenReturn(Optional.of(profile));
+        when(workerRepository.findByMobileNumber(mobile)).thenReturn(java.util.List.of(profile));
 
         profileService.updateAvailability(mobile, true);
 

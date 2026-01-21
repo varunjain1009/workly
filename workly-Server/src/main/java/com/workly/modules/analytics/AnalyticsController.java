@@ -27,6 +27,8 @@ public class AnalyticsController {
     @Builder
     public static class DashboardStats {
         private long totalUsers;
+        private long totalSeekers;
+        private long totalWorkers;
         private long newUsersToday;
         private long activeJobs;
         private long completedJobs;

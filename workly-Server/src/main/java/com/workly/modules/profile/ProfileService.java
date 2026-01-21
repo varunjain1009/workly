@@ -26,7 +26,20 @@ public class ProfileService {
     }
 
     public Optional<WorkerProfile> getWorkerProfile(String mobileNumber) {
-        return workerRepository.findByMobileNumber(mobileNumber);
+        java.util.List<WorkerProfile> profiles = workerRepository.findByMobileNumber(mobileNumber);
+        if (profiles.isEmpty()) {
+            return Optional.empty();
+        }
+        if (profiles.size() > 1) {
+            // Cleanup duplicates: keep the last modified one or just the first one
+            // Here we keep the first one and delete others to fix the data
+            WorkerProfile kept = profiles.get(0);
+            for (int i = 1; i < profiles.size(); i++) {
+                workerRepository.delete(profiles.get(i));
+            }
+            return Optional.of(kept);
+        }
+        return Optional.of(profiles.get(0));
     }
 
     public Optional<SkillSeekerProfile> getSeekerProfile(String mobileNumber) {
@@ -34,14 +47,14 @@ public class ProfileService {
     }
 
     public void updateLocation(String mobileNumber, double longitude, double latitude) {
-        workerRepository.findByMobileNumber(mobileNumber).ifPresent(p -> {
+        getWorkerProfile(mobileNumber).ifPresent(p -> {
             p.setLastLocation(new double[] { longitude, latitude });
             workerRepository.save(p);
         });
     }
 
     public void updateAvailability(String mobileNumber, boolean available) {
-        workerRepository.findByMobileNumber(mobileNumber).ifPresent(p -> {
+        getWorkerProfile(mobileNumber).ifPresent(p -> {
             p.setAvailable(available);
             workerRepository.save(p);
         });
@@ -49,7 +62,7 @@ public class ProfileService {
 
     public void updateDeviceToken(String mobileNumber, String token) {
         // Try to find worker first
-        Optional<WorkerProfile> worker = workerRepository.findByMobileNumber(mobileNumber);
+        Optional<WorkerProfile> worker = getWorkerProfile(mobileNumber);
         if (worker.isPresent()) {
             WorkerProfile p = worker.get();
             p.setDeviceToken(token);

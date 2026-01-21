@@ -4,6 +4,16 @@ const api = axios.create({
     baseURL: '/api/v1',
 });
 
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
 export interface Config {
     id: string;
     key: string;
@@ -63,6 +73,8 @@ export const addAliases = async (skillName: string, aliases: string[]) => {
 
 export interface DashboardStats {
     totalUsers: number;
+    totalSeekers: number;
+    totalWorkers: number;
     newUsersToday: number;
     activeJobs: number;
     completedJobs: number;

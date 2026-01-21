@@ -47,11 +47,23 @@ export default function Dashboard() {
             <h1 className="text-2xl font-bold text-slate-800 mb-6">Dashboard</h1>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
                 <StatCard
                     title="Total Users"
                     value={stats.totalUsers.toLocaleString()}
                     icon={<Users className="text-blue-600" size={24} />}
+                    trend=""
+                />
+                <StatCard
+                    title="Seekers"
+                    value={stats.totalSeekers.toLocaleString()}
+                    icon={<Users className="text-indigo-600" size={24} />}
+                    trend=""
+                />
+                <StatCard
+                    title="Providers"
+                    value={stats.totalWorkers.toLocaleString()}
+                    icon={<Briefcase className="text-orange-600" size={24} />}
                     trend=""
                 />
                 <StatCard

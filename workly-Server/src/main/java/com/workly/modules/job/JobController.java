@@ -55,20 +55,22 @@ public class JobController {
     }
 
     @GetMapping
-    public ApiResponse<List<com.workly.modules.job.dto.JobDTO>> getJobs() {
+    public ApiResponse<List<com.workly.modules.job.dto.JobDTO>> getJobs(
+            @RequestParam(required = false) String type) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String mobileNumber = auth.getName();
         log.info("Received request to fetch all jobs for mobile: {}", mobileNumber);
-        List<Job> jobs = jobService.getSeekerJobs(mobileNumber);
+        List<Job> jobs = jobService.getSeekerJobs(mobileNumber, type);
         log.info("Fetched {} jobs for mobile: {}", jobs.size(), mobileNumber);
         return ApiResponse.success(jobs.stream().map(this::toDto).toList(), "Jobs retrieved");
     }
 
     @GetMapping("/seeker")
-    public ApiResponse<List<com.workly.modules.job.dto.JobDTO>> getSeekerJobs() {
+    public ApiResponse<List<com.workly.modules.job.dto.JobDTO>> getSeekerJobs(
+            @RequestParam(required = false) String type) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String mobileNumber = auth.getName();
-        return ApiResponse.success(jobService.getSeekerJobs(mobileNumber).stream().map(this::toDto).toList(),
+        return ApiResponse.success(jobService.getSeekerJobs(mobileNumber, type).stream().map(this::toDto).toList(),
                 "Jobs retrieved");
     }
 
