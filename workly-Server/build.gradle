@@ -44,6 +44,11 @@ dependencies {
     // Database
     runtimeOnly 'org.postgresql:postgresql'
     
+    // Monolithic Mode Dependencies
+    implementation project(':config-service')
+    implementation project(':search-service')
+    implementation project(':chat-service')
+    
     // Security & JWT
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
@@ -72,4 +77,8 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+bootRun {
+    environment 'SERVER_PORT', '8080'
 }

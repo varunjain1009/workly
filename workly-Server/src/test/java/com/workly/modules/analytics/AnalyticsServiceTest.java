@@ -1,7 +1,6 @@
 package com.workly.modules.analytics;
 
 import com.workly.modules.analytics.AnalyticsController.DashboardStats;
-import com.workly.modules.job.Job;
 import com.workly.modules.job.JobRepository;
 import com.workly.modules.job.JobStatus;
 import com.workly.modules.profile.SkillSeekerProfileRepository;
@@ -13,7 +12,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -52,11 +50,7 @@ class AnalyticsServiceTest {
         when(jobRepository.countByStatus(JobStatus.COMPLETED)).thenReturn(10L);
         when(jobRepository.countByStatus(JobStatus.CREATED)).thenReturn(5L); // For distribution logic
 
-        Job completedJob1 = new Job();
-        completedJob1.setBudget(100.0);
-        Job completedJob2 = new Job();
-        completedJob2.setBudget(200.50);
-        when(jobRepository.findByStatus(JobStatus.COMPLETED)).thenReturn(List.of(completedJob1, completedJob2));
+        when(jobRepository.sumBudgetByStatus(JobStatus.COMPLETED)).thenReturn(300.50);
 
         // Act
         DashboardStats stats = analyticsService.getDashboardStats();

@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -20,6 +21,7 @@ public class ConfigService {
 
     private static final String CONFIG_CHANNEL = "config_updates";
 
+    @Transactional
     public ConfigEntity createOrUpdateConfig(String key, String value, String scope, String adminId) {
         // 1. Deactivate current active config
         configRepository.findByKeyAndScopeAndActiveTrue(key, scope)
@@ -60,9 +62,7 @@ public class ConfigService {
     }
 
     public List<ConfigEntity> getAllActiveConfigs(String scope) {
-        return configRepository.findAll().stream()
-                .filter(c -> c.isActive() && c.getScope().equals(scope))
-                .toList(); // Using Java 16+ toList() or collect(Collectors.toList())
+        return configRepository.findByScopeAndActiveTrue(scope);
     }
 
     public List<ConfigEntity> getConfigHistory(String key, String scope) {

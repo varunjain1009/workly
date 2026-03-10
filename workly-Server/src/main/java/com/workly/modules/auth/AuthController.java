@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
 
 @Slf4j
 @RestController
@@ -24,14 +25,14 @@ public class AuthController {
     private int ttlHours;
 
     @PostMapping("/otp")
-    public ApiResponse<Void> requestOtp(@RequestBody OtpRequest request) {
+    public ApiResponse<Void> requestOtp(@Valid @RequestBody OtpRequest request) {
         log.info("Received OTP request for mobile: {}", request.getMobileNumber());
         otpService.generateAndSendOtp(request.getMobileNumber());
         return ApiResponse.success(null, "OTP sent successfully");
     }
 
     @PostMapping("/login")
-    public ApiResponse<AuthResponse> login(@RequestBody LoginRequest request) {
+    public ApiResponse<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         log.info("Received login attempt for mobile: {}", request.getMobileNumber());
         boolean isValid = otpService.validateOtp(request.getMobileNumber(), request.getOtp());
         if (!isValid) {
@@ -40,13 +41,8 @@ public class AuthController {
         }
 
         // Ensure Seeker Profile exists (Implicit Registration)
-        if (profileService.getSeekerProfile(request.getMobileNumber()).isEmpty()) {
-            log.info("Creating default seeker profile for mobile: {}", request.getMobileNumber());
-            com.workly.modules.profile.SkillSeekerProfile profile = new com.workly.modules.profile.SkillSeekerProfile();
-            profile.setMobileNumber(request.getMobileNumber());
-            profile.setCreatedAt(java.time.LocalDateTime.now());
-            profileService.createOrUpdateSeekerProfile(profile);
-        }
+        // Ensure Seeker Profile exists transactionally
+        profileService.getOrCreateSeekerProfile(request.getMobileNumber());
 
         log.info("Login successful for mobile: {}. Generating token.", request.getMobileNumber());
         String token = jwtUtils.generateToken(request.getMobileNumber());
@@ -60,8 +56,12 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ApiResponse<AuthResponse> refresh() {
-        String currentMobile = (String) org.springframework.security.core.context.SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        if (auth == null || auth.getPrincipal() == null) {
+            throw WorklyException.unauthorized("No valid session found");
+        }
+        String currentMobile = (String) auth.getPrincipal();
         log.info("Refreshing session for mobile: {}", currentMobile);
 
         String newToken = jwtUtils.generateToken(currentMobile);

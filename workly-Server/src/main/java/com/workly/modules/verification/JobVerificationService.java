@@ -30,11 +30,7 @@ public class JobVerificationService {
             throw WorklyException.badRequest("Job is already completed");
         }
 
-        // Update MongoDB state
-        mongoJob.setStatus(JobStatus.COMPLETED);
-        mongoJobRepository.save(mongoJob);
-
-        // Update/Create PostgreSQL state
+        // 1. Update/Create PostgreSQL state FIRST
         JobCompletion completion = jpaJobRepository.findByJobId(jobId)
                 .orElse(new JobCompletion());
 
@@ -45,6 +41,15 @@ public class JobVerificationService {
         completion.setVerified(true);
         completion.setCompletedAt(LocalDateTime.now());
 
-        return jpaJobRepository.save(completion);
+        JobCompletion savedCompletion = jpaJobRepository.save(completion);
+
+        // 2. Update MongoDB state LAST.
+        // If this throws, the above JPA save automatically rolls back because of
+        // @Transactional.
+        // If the JPA save above throws, this MongoDB save is never reached.
+        mongoJob.setStatus(JobStatus.COMPLETED);
+        mongoJobRepository.save(mongoJob);
+
+        return savedCompletion;
     }
 }

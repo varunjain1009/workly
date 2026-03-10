@@ -4,7 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.kafka.core.KafkaTemplate;
+import com.workly.modules.job.outbox.OutboxEvent;
+import com.workly.modules.job.outbox.OutboxEventRepository;
 import com.workly.modules.search.SearchServiceClient;
 
 import java.util.Collections;
@@ -21,17 +22,20 @@ class JobServiceTest {
     private JobRepository jobRepository;
 
     @Mock
-    private KafkaTemplate<String, Object> kafkaTemplate;
+    private OutboxEventRepository outboxEventRepository;
 
     @Mock
     private SearchServiceClient searchServiceClient;
+
+    @Mock
+    private JobAcceptanceService jobAcceptanceService;
 
     private JobService jobService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        jobService = new JobService(jobRepository, kafkaTemplate, searchServiceClient);
+        jobService = new JobService(jobRepository, jobAcceptanceService, outboxEventRepository, searchServiceClient);
     }
 
     @Test
@@ -52,7 +56,7 @@ class JobServiceTest {
         assertNotNull(result.getCompletionOtp());
         assertEquals(JobStatus.BROADCASTED, result.getStatus());
         verify(jobRepository).save(any(Job.class));
-        verify(kafkaTemplate).send(eq("job.created"), any(JobEvent.class));
+        verify(outboxEventRepository).save(any(OutboxEvent.class));
         verify(searchServiceClient).normalizeSkills(anyList());
     }
 
@@ -61,7 +65,7 @@ class JobServiceTest {
         String jobId = "job123";
         Job job = new Job();
         job.setId(jobId);
-        job.setStatus(JobStatus.CREATED);
+        job.setStatus(JobStatus.BROADCASTED);
 
         job.setSeekerMobileNumber("123");
 
@@ -71,7 +75,7 @@ class JobServiceTest {
         Job result = jobService.updateJobStatus(jobId, JobStatus.ASSIGNED, "123");
 
         assertEquals(JobStatus.ASSIGNED, result.getStatus());
-        verify(kafkaTemplate).send(eq("job.status.updated"), any(JobEvent.class));
+        verify(outboxEventRepository).save(any(OutboxEvent.class));
     }
 
     @Test

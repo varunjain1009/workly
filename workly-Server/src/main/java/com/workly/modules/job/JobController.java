@@ -104,6 +104,9 @@ public class JobController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String mobileNumber = auth.getName();
         String otp = payload.get("otp");
+        if (otp == null || otp.isBlank()) {
+            throw com.workly.core.WorklyException.badRequest("OTP is required");
+        }
         jobService.completeJob(jobId, otp, mobileNumber);
         return ApiResponse.success(null, "Job completed successfully");
     }

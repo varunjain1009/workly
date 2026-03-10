@@ -4,15 +4,35 @@ const api = axios.create({
     baseURL: '/api/v1',
 });
 
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('adminToken');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
 api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response && error.response.status === 401) {
-            window.location.href = '/login';
+            localStorage.removeItem('adminToken');
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+            }
         }
         return Promise.reject(error);
     }
 );
+
+export const adminLogin = async (data: any) => {
+    return api.post('/admin/auth/login', data);
+};
+
+export const changeAdminPassword = async (data: any) => {
+    return api.post('/admin/auth/change-password', data);
+};
+
 
 export interface Config {
     id: string;
@@ -85,6 +105,29 @@ export interface DashboardStats {
 
 export const getDashboardStats = async () => {
     return api.get<DashboardStats>('/analytics/dashboard');
+}
+
+export interface PaginatedResponse<T> {
+    content: T[];
+    pageable: {
+        pageNumber: number;
+        pageSize: number;
+    };
+    totalElements: number;
+    totalPages: number;
+    last: boolean;
+}
+
+export const getSeekers = async (page = 0, size = 10) => {
+    return api.get<PaginatedResponse<any>>(`/admin/seekers?page=${page}&size=${size}`);
+}
+
+export const getProviders = async (page = 0, size = 10) => {
+    return api.get<PaginatedResponse<any>>(`/admin/providers?page=${page}&size=${size}`);
+}
+
+export const getJobs = async (page = 0, size = 10) => {
+    return api.get<PaginatedResponse<any>>(`/admin/jobs?page=${page}&size=${size}`);
 }
 
 export interface QueryRequest {

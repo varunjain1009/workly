@@ -15,7 +15,7 @@ public class Fast2SmsOtpProvider implements OtpProvider {
 
     @Override
     public void sendOtp(String mobileNumber, String otp) {
-        log.info("Sending Fast2SMS OTP [{}] to mobile number [{}] using API Key: {}", otp, mobileNumber, apiKey);
+        log.info("Sending Fast2SMS OTP to mobile number [{}]", mobileNumber);
         // Implementation for Fast2SMS API would go here
     }
 }

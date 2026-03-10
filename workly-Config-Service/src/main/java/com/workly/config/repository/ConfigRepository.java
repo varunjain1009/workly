@@ -11,6 +11,8 @@ import java.util.Optional;
 public interface ConfigRepository extends MongoRepository<ConfigEntity, String> {
     Optional<ConfigEntity> findByKeyAndScopeAndActiveTrue(String key, String scope);
 
+    List<ConfigEntity> findByScopeAndActiveTrue(String scope);
+
     List<ConfigEntity> findByKeyAndScopeOrderByVersionDesc(String key, String scope);
 
     Optional<ConfigEntity> findByKeyAndScopeAndVersion(String key, String scope, Integer version);

@@ -3,6 +3,8 @@ package com.workly.modules.review;
 import com.workly.core.ApiResponse;
 import com.workly.modules.review.dto.ReviewDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,12 +18,15 @@ public class ReviewController {
 
     @PostMapping
     public ApiResponse<ReviewDTO> submitReview(@RequestBody ReviewDTO reviewDto) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String mobileNumber = auth.getName();
+
         Review review = new Review();
         review.setJobId(reviewDto.getJobId());
         review.setRating(reviewDto.getRating());
         review.setComment(reviewDto.getComment());
 
-        Review savedReview = reviewService.submitReview(review);
+        Review savedReview = reviewService.submitReview(review, mobileNumber);
         return ApiResponse.success(toDto(savedReview), "Review submitted successfully");
     }
 

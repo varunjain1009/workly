@@ -31,24 +31,35 @@ This starts:
 *   **Elasticsearch**: Search Engine
 
 ### 2. Backend Services
-You can run the services individually using Gradle.
+You can run the system in two modes: **Monolith** or **Microservices**. The mode is controlled by the `app.mode` property in `workly-Server/src/main/resources/config.properties`.
 
-**Core Server**:
-```bash
-./gradlew :server:bootRun
-```
-**Chat Service**:
-```bash
-./gradlew :chat-service:bootRun
-```
-**Search Service**:
-```bash
-./gradlew :search-service:bootRun
-```
-**Config Service**:
-```bash
-./gradlew :config-service:bootRun
-```
+#### Option A: Monolith Mode (Recommended for quick testing)
+In monolith mode, all components (Auth, Matchmaking, Chat WebSocket, Search) run within the single `workly-Server` instance.
+1. Edit `workly-Server/src/main/resources/config.properties`:
+   ```properties
+   app.mode=monolith
+   ```
+2. Start the core server:
+   ```bash
+   ./gradlew :server:bootRun
+   ```
+
+#### Option B: Microservices Mode
+In microservices mode, the core server delegates specific responsibilities to independent services.
+1. Edit `workly-Server/src/main/resources/config.properties`:
+   ```properties
+   app.mode=microservice
+   ```
+2. Start the core server:
+   ```bash
+   ./gradlew :server:bootRun
+   ```
+3. In separate terminal windows, start the respective microservices:
+   ```bash
+   ./gradlew :chat-service:bootRun
+   ./gradlew :search-service:bootRun
+   ./gradlew :config-service:bootRun
+   ```
 
 ### 3. Frontend (Admin)
 ```bash
@@ -57,10 +68,27 @@ npm run dev
 ```
 
 ### 4. Mobile Apps (Android)
-*   Open the project in **Android Studio**.
-*   Sync Gradle.
-*   Update `src/main/assets/config.properties` if testing on a physical device (default is `10.0.2.2` for emulator).
-*   Run `workly-Help-Seeker` or `workly-Help-Provider`.
+You can build the Android APKs using the provided Docker environments, which handle the SDK and JDK requirements automatically.
+
+**Build workly-Help-Provider APK:**
+```bash
+cd workly-Help-Provider
+docker build -t workly-help-provider-build .
+docker create --name provider-temp workly-help-provider-build
+docker cp provider-temp:/app/app/build/outputs/apk/debug/app-debug.apk ./workly-help-provider-debug.apk
+docker rm provider-temp
+```
+
+**Build workly-Help-Seeker APK:**
+```bash
+cd workly-Help-Seeker
+docker build -t workly-help-seeker-build .
+docker create --name seeker-temp workly-help-seeker-build
+docker cp seeker-temp:/app/app/build/outputs/apk/debug/app-debug.apk ./workly-help-seeker-debug.apk
+docker rm seeker-temp
+```
+
+*Alternatively, open the projects in **Android Studio**, update `src/main/assets/config.properties` if testing on a physical device, and run them directly.*
 
 ### 5. Unified Local Debugging (VS Code)
 **Prerequisites**: Docker Desktop, VS Code, Java Extension Pack.

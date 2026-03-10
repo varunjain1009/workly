@@ -2,7 +2,6 @@ package com.workly.modules.analytics;
 
 import com.workly.modules.analytics.AnalyticsController.DashboardStats;
 import com.workly.modules.analytics.AnalyticsController.DataPoint;
-import com.workly.modules.job.Job;
 import com.workly.modules.job.JobRepository;
 import com.workly.modules.job.JobStatus;
 import com.workly.modules.profile.SkillSeekerProfileRepository;
@@ -50,11 +49,9 @@ public class AnalyticsService {
 
         long completedJobs = jobRepository.countByStatus(JobStatus.COMPLETED);
 
-        // Calculate revenue from completed jobs
-        List<Job> completedJobsList = jobRepository.findByStatus(JobStatus.COMPLETED);
-        double revenue = completedJobsList.stream()
-                .mapToDouble(Job::getBudget)
-                .sum();
+        // Calculate revenue from completed jobs using DB aggregation
+        Double revenueCalc = jobRepository.sumBudgetByStatus(JobStatus.COMPLETED);
+        double revenue = revenueCalc != null ? revenueCalc : 0.0;
 
         return DashboardStats.builder()
                 .totalUsers(totalUsers)

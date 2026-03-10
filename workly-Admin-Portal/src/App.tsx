@@ -1,21 +1,35 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { Settings, Activity, LayoutDashboard, Database, BarChart2 } from 'lucide-react';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
+import { Settings, Activity, LayoutDashboard, Database, BarChart2, Lock, LogOut } from 'lucide-react';
 import { useState } from 'react';
+import ChangePasswordModal from './components/ChangePasswordModal';
 
 import Configs from './pages/Configs';
 import AuditLogs from './pages/AuditLogs';
 import Skills from './pages/Skills';
 import Dashboard from './pages/Dashboard';
 import CustomReports from './pages/CustomReports';
+import Login from './pages/Login';
 
-function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const token = localStorage.getItem('adminToken');
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+};
+
+function AdminLayout({ activeTab, setActiveTab, setShowChangePassword }: any) {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminToken');
+    navigate('/login');
+  };
 
   return (
-    <Router>
-      <div className="flex h-screen bg-gray-100">
-        {/* Sidebar */}
-        <aside className="w-64 bg-slate-900 text-white flex flex-col">
+    <div className="flex h-screen bg-gray-100 w-full">
+      {/* Sidebar */}
+      <aside className="w-64 bg-slate-900 text-white flex flex-col">
           <div className="p-6 border-b border-slate-700">
             <h1 className="text-xl font-bold flex items-center gap-2">
               <Database className="text-blue-400" />
@@ -49,8 +63,22 @@ function App() {
               Reports
             </Link>
           </nav>
-          <div className="p-4 border-t border-slate-700">
-            <div className="flex items-center gap-3">
+          <div className="p-4 border-t border-slate-700 space-y-2">
+            <button 
+              onClick={() => setShowChangePassword(true)}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-slate-800 text-slate-300 hover:text-white"
+            >
+              <Lock size={20} />
+              Change Password
+            </button>
+            <button 
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-red-900/50 text-red-400 hover:text-red-300"
+            >
+              <LogOut size={20} />
+              Sign Out
+            </button>
+            <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-700">
               <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center font-bold">A</div>
               <div>
                 <p className="text-sm font-medium">Admin User</p>
@@ -71,6 +99,31 @@ function App() {
           </Routes>
         </main>
       </div>
+  );
+}
+
+function App() {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [showChangePassword, setShowChangePassword] = useState(false);
+
+  return (
+    <Router>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="*" element={
+          <ProtectedRoute>
+            <AdminLayout 
+              activeTab={activeTab} 
+              setActiveTab={setActiveTab} 
+              setShowChangePassword={setShowChangePassword} 
+            />
+          </ProtectedRoute>
+        } />
+      </Routes>
+      
+      {showChangePassword && (
+        <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
+      )}
     </Router>
   );
 }

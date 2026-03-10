@@ -60,6 +60,9 @@ public class ProfileController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String mobileNumber = auth.getName();
         String token = payload.get("token");
+        if (token == null || token.isBlank()) {
+            throw com.workly.core.WorklyException.badRequest("Device token is required");
+        }
         profileService.updateDeviceToken(mobileNumber, token);
         return ApiResponse.success(null, "Device token updated");
     }

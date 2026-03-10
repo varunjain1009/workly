@@ -45,7 +45,7 @@ class ReviewServiceTest {
         when(reviewRepository.findByJobId(jobId)).thenReturn(Optional.empty());
         when(reviewRepository.save(review)).thenReturn(review);
 
-        Review result = reviewService.submitReview(review);
+        Review result = reviewService.submitReview(review, "123");
 
         assertNotNull(result);
         assertEquals("123", result.getSeekerMobileNumber());
@@ -64,6 +64,6 @@ class ReviewServiceTest {
 
         when(jobService.getJobById(jobId)).thenReturn(job);
 
-        assertThrows(WorklyException.class, () -> reviewService.submitReview(review));
+        assertThrows(WorklyException.class, () -> reviewService.submitReview(review, "123"));
     }
 }

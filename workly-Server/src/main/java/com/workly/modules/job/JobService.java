@@ -1,14 +1,18 @@
 package com.workly.modules.job;
 
 import com.workly.core.WorklyException;
+import com.workly.modules.job.outbox.OutboxEvent;
+import com.workly.modules.job.outbox.OutboxEventRepository;
 import com.workly.modules.search.SearchServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Random;
+import java.security.SecureRandom;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -16,11 +20,22 @@ import java.util.Random;
 public class JobService {
 
     private final JobRepository jobRepository;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final JobAcceptanceService jobAcceptanceService;
+    private final OutboxEventRepository outboxEventRepository;
     private final SearchServiceClient searchServiceClient;
 
     private static final String JOB_TOPIC = "job.created";
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
+    private static final Map<JobStatus, Set<JobStatus>> VALID_TRANSITIONS = Map.of(
+            JobStatus.CREATED, Set.of(JobStatus.BROADCASTED, JobStatus.SCHEDULED, JobStatus.CANCELLED),
+            JobStatus.SCHEDULED, Set.of(JobStatus.BROADCASTED, JobStatus.CANCELLED),
+            JobStatus.BROADCASTED,
+            Set.of(JobStatus.ASSIGNED, JobStatus.PENDING_ACCEPTANCE, JobStatus.CANCELLED, JobStatus.EXPIRED),
+            JobStatus.PENDING_ACCEPTANCE, Set.of(JobStatus.ASSIGNED, JobStatus.CANCELLED),
+            JobStatus.ASSIGNED, Set.of(JobStatus.COMPLETED, JobStatus.CANCELLED));
+
+    @Transactional
     public Job createJob(Job job) {
         if (job.getRequiredSkills() != null && !job.getRequiredSkills().isEmpty()) {
             job.setRequiredSkills(searchServiceClient.normalizeSkills(job.getRequiredSkills()));
@@ -34,7 +49,7 @@ public class JobService {
         }
 
         // Generate completion OTP
-        job.setCompletionOtp(String.format("%04d", new Random().nextInt(10000)));
+        job.setCompletionOtp(String.format("%04d", SECURE_RANDOM.nextInt(10000)));
 
         Job savedJob = jobRepository.save(job);
 
@@ -44,17 +59,24 @@ public class JobService {
                 .eventType("JOB_CREATED")
                 .status(savedJob.getStatus())
                 .build();
-        kafkaTemplate.send(JOB_TOPIC, event);
+        saveOutboxEvent(JOB_TOPIC, event);
 
         return savedJob;
     }
 
+    @Transactional
     public Job updateJobStatus(String jobId, JobStatus status, String requestingUserMobile) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> WorklyException.notFound("Job not found"));
 
         if (!job.getSeekerMobileNumber().equals(requestingUserMobile)) {
             throw WorklyException.forbidden("You are not authorized to update this job");
+        }
+
+        Set<JobStatus> allowedStatuses = VALID_TRANSITIONS.get(job.getStatus());
+        if (allowedStatuses == null || !allowedStatuses.contains(status)) {
+            throw WorklyException.badRequest(
+                    String.format("Cannot transition from %s to %s", job.getStatus(), status));
         }
 
         job.setStatus(status);
@@ -64,12 +86,14 @@ public class JobService {
                 .jobId(savedJob.getId())
                 .eventType("JOB_STATUS_UPDATED")
                 .status(savedJob.getStatus())
+                .workerId(savedJob.getWorkerMobileNumber())
                 .build();
-        kafkaTemplate.send("job.status.updated", event);
+        saveOutboxEvent("job.status.updated", event);
 
         return savedJob;
     }
 
+    @Transactional
     public Job updateJob(String jobId, Job jobDetails, String requestingUserMobile) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> WorklyException.notFound("Job not found"));
@@ -90,9 +114,17 @@ public class JobService {
                 .eventType("JOB_UPDATED")
                 .status(savedJob.getStatus())
                 .build();
-        kafkaTemplate.send(JOB_TOPIC, event);
+
+        saveOutboxEvent(JOB_TOPIC, event);
 
         return savedJob;
+    }
+
+    private void saveOutboxEvent(String topic, Object payload) {
+        OutboxEvent outboxEvent = new OutboxEvent();
+        outboxEvent.setTopic(topic);
+        outboxEvent.setPayload(payload);
+        outboxEventRepository.save(outboxEvent);
     }
 
     public List<Job> getSeekerJobs(String mobileNumber, String type) {
@@ -143,30 +175,9 @@ public class JobService {
         return jobRepository.findByStatusIn(List.of(JobStatus.BROADCASTED, JobStatus.SCHEDULED));
     }
 
+    @Transactional
     public void acceptJob(String jobId, String workerMobile) {
-        Job job = jobRepository.findById(jobId)
-                .orElseThrow(() -> WorklyException.notFound("Job not found"));
-
-        if (job.getStatus() != JobStatus.BROADCASTED && job.getStatus() != JobStatus.SCHEDULED) {
-            throw WorklyException.badRequest("Job is not available for acceptance");
-        }
-
-        // Check if manual selection
-        if (job.getAssignmentMode() == com.workly.modules.job.AssignmentMode.MANUAL_SELECT) {
-            // Apply for job (PENDING_ACCEPTANCE) - Logic to be added for "Applications"
-            // For MVP simplicty, let's treat everything as FIRST_ACCEPT or just ASSIGNED
-            // But if MANUAL, we should probably add to a list of applicants?
-            // For now, let's handle FIRST_ACCEPT behavior (ASSIGNED)
-            // Or if MANUAL, set to PENDING_ACCEPTANCE and set workerId?
-            // Use ASSIGNED for now for simplicity of flow.
-            job.setStatus(JobStatus.PENDING_ACCEPTANCE);
-        } else {
-            job.setStatus(JobStatus.ASSIGNED);
-        }
-
-        job.setWorkerMobileNumber(workerMobile);
-
-        jobRepository.save(job);
+        Job job = jobAcceptanceService.acceptJob(jobId, workerMobile);
 
         JobEvent event = JobEvent.builder()
                 .jobId(job.getId())
@@ -174,21 +185,23 @@ public class JobService {
                 .status(job.getStatus())
                 .workerId(workerMobile)
                 .build();
-        kafkaTemplate.send(JOB_TOPIC, event);
+        saveOutboxEvent(JOB_TOPIC, event);
     }
 
-    public void completeJob(String jobId, String otp, String workerMobile) {
+    @Transactional
+    public Job completeJob(String jobId, String otp, String requestingUserMobile) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> WorklyException.notFound("Job not found"));
 
-        if (!job.getStatus().equals(JobStatus.ASSIGNED)) {
-            if (job.getStatus().equals(JobStatus.COMPLETED)) {
-                throw WorklyException.badRequest("Job is already completed");
-            }
+        if (job.getStatus() == JobStatus.COMPLETED) {
+            throw WorklyException.badRequest("Job is already completed");
+        }
+        if (job.getStatus() != JobStatus.ASSIGNED) {
+            throw WorklyException.badRequest("Job must be in ASSIGNED status to complete");
         }
 
         // Verify Worker
-        if (job.getWorkerMobileNumber() == null || !job.getWorkerMobileNumber().equals(workerMobile)) {
+        if (job.getWorkerMobileNumber() == null || !job.getWorkerMobileNumber().equals(requestingUserMobile)) {
             throw WorklyException.forbidden("You are not the assigned worker for this job");
         }
 
@@ -203,9 +216,10 @@ public class JobService {
                 .jobId(job.getId())
                 .eventType("JOB_COMPLETED")
                 .status(job.getStatus())
-                .workerId(workerMobile)
+                .workerId(requestingUserMobile)
                 .build();
-        kafkaTemplate.send(JOB_TOPIC, event);
+        saveOutboxEvent(JOB_TOPIC, event);
+        return job; // Added return statement
     }
 
     public Job getJobById(String jobId) {

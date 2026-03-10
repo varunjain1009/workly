@@ -3,6 +3,7 @@ package com.workly.modules.profile;
 import lombok.RequiredArgsConstructor;
 import com.workly.modules.search.SearchServiceClient;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -21,8 +22,19 @@ public class ProfileService {
         return workerRepository.save(profile);
     }
 
+    @Transactional
     public SkillSeekerProfile createOrUpdateSeekerProfile(SkillSeekerProfile profile) {
         return seekerRepository.save(profile);
+    }
+
+    @Transactional
+    public SkillSeekerProfile getOrCreateSeekerProfile(String mobileNumber) {
+        return seekerRepository.findByMobileNumber(mobileNumber).orElseGet(() -> {
+            SkillSeekerProfile profile = new SkillSeekerProfile();
+            profile.setMobileNumber(mobileNumber);
+            profile.setCreatedAt(java.time.LocalDateTime.now());
+            return seekerRepository.save(profile);
+        });
     }
 
     public Optional<WorkerProfile> getWorkerProfile(String mobileNumber) {

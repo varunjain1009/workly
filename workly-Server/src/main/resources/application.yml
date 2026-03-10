@@ -1,6 +1,8 @@
 spring:
   application:
     name: workly-server
+  main:
+    allow-bean-definition-overriding: true
 
   profiles:
     active: dev
@@ -17,6 +19,12 @@ spring:
       uri: jdbc:postgresql://localhost:5432/workly
       username: workly
       password: password
+
+  elasticsearch:
+    uris: http://localhost:9200
+    socket-timeout: 10s
+    username: elastic
+    password: password
 
   datasource:
     url: jdbc:postgresql://localhost:5432/workly
@@ -92,4 +100,4 @@ custom:
     url: ws://10.0.2.2:8082/ws/chat
 
 search-service:
-  url: http://localhost:8083
+  url: http://localhost:8080

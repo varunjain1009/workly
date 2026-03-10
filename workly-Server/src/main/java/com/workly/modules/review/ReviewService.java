@@ -15,11 +15,19 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final com.workly.modules.job.JobService jobService;
 
-    public Review submitReview(Review review) {
+    public Review submitReview(Review review, String reviewerMobile) {
+        if (review.getRating() < 1 || review.getRating() > 5) {
+            throw WorklyException.badRequest("Rating must be between 1 and 5");
+        }
+
         Job job = jobService.getJobById(review.getJobId());
 
         if (job.getStatus() != JobStatus.COMPLETED) {
             throw WorklyException.badRequest("Reviews can only be submitted for completed jobs");
+        }
+
+        if (!job.getSeekerMobileNumber().equals(reviewerMobile)) {
+            throw WorklyException.forbidden("Only the job seeker can submit a review");
         }
 
         if (reviewRepository.findByJobId(review.getJobId()).isPresent()) {

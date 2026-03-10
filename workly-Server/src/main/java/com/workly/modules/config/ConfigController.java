@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-@RestController
+@RestController("serverConfigController")
 @RequestMapping("/api/v1/config")
 public class ConfigController {
 
