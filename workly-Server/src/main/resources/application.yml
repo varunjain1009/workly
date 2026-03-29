@@ -57,6 +57,13 @@ logging:
 server:
   port: 8080
 
+workly:
+  features:
+    payments:
+      enabled: false
+    sms:
+      enabled: false
+
 app:
   mode: monolith # monolith | microservice
   region: india

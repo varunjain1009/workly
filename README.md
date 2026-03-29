@@ -111,6 +111,50 @@ If you prefer running services from command line but need databases:
 docker-compose -f docker-compose-dev.yml up -d
 ```
 
+## ⚙️ Third-Party Integrations & Configurations
+`workly` delegates key external responsibilities to 3rd party providers. For local development, all features are simulated. Below is the guide to enabling them for production in `workly-Server/src/main/resources/application.yml` or `config.properties`.
+
+### 1. Feature Flags (Bypassing Payments & SMS)
+By default, **Payments** and **SMS** are bypassed to allow seamless compilation and testing. Setting `payments.enabled=false` forces the Escrow engine to generate mock "BYPASSED" intents without querying Stripe.
+Check `application.yml`:
+```yaml
+workly:
+  features:
+    payments: false # Disables real Escrow checkout locking
+    sms: false      # Disables Twilio/Fast2SMS and logs OTP to console
+```
+*Note: The frontend mobile apps automatically read these flags dynamically via `GET /api/v1/config/features` on launch.*
+
+### 2. Stripe Payment Gateway Setup
+When moving to production, update your gateway credentials:
+1. Turn `workly.features.payments.enabled=true`
+2. Configure your secret mapping in `application.yml` (future integration):
+```yaml
+stripe:
+  secret-key: "sk_test_..."
+  webhook-secret: "whsec_..."
+```
+
+### 3. SMS & OTP (Twilio / Amazon SNS)
+Currently, `sms.provider` maps to `mock`. To enable real text messages:
+1. Turn `workly.features.sms.enabled=true`
+2. Update the specific gateway settings under the `sms:` block.
+
+### 4. Push Notifications (Firebase / FCM)
+Real-time push notifications are handled via Google Firebase Cloud Messaging.
+1. Download `google-services.json` from your Firebase Console.
+2. Drop the file inside the root of both Android Mobile Apps architectures:
+   - `workly-Help-Provider/app/google-services.json`
+   - `workly-Help-Seeker/app/google-services.json`
+3. Download your backend `firebase-adminsdk.json` and place it in `workly-Server/src/main/resources/`.
+
+### 5. Local Networking vs Android Emulator IPs
+If you are testing from a physical Android Device, ensure your host machine IP (e.g., `192.168.1.5`) replaces `localhost` inside:
+- `application.yml`
+- Android App's `NetworkClient.java` or `strings.xml`.
+
+If testing on the **Android Emulator**, use the specialized localhost bridge: `10.0.2.2`.
+
 ## 📖 Documentation
 *   **[Product Roadmap](PRODUCT_ROADMAP.md)**: Upcoming features and critical functionality gaps.
 *   **[Architecture Guide](ARCHITECTURE.md)**: System design, diagrams, and data flow.

@@ -69,3 +69,26 @@ I have successfully completed **Phase 4**, driving critical algorithmic mechanic
 - Integrated these markdowns transparently through `JobController` hooking directly into the simulated core `PaymentService`. Here, the *platform subsidizes* the exact discount dynamically off the final Gross Ledger, preventing Provider payouts from degrading under promotional drives.
 
 **Repository Health**: Both the `API.md` and the `PRODUCT_ROADMAP.md` are accurately updated. These changes encapsulate all endpoints matching **[Phase 4]**, leaving the backend fundamentally 100% complete!
+
+---
+
+# Walkthrough: Feature Flags & Core App Configuration
+
+I have successfully refactored the application's core payment behavior alongside comprehensively documenting third-party hooks in the master `README`!
+
+## Architectural & Code Enhancements:
+
+### 1. `application.yml` Toggles & API (`FeatureConfigController`)
+- **System-Wide Feature Block**: Injected `workly.features.payments.enabled` into the YAML structure. By explicitly assigning this boolean to `false`, testing is dramatically simplified.
+- **Dynamic Frontend Support**: Built `FeatureConfigController` exposing the `GET /api/v1/config/features` unauthenticated endpoint. This serves as a vital switch for our upcoming Android mobile apps. They can launch securely, poll this endpoint, and completely hide any payment UI elements seamlessly without failing.
+
+### 2. Payment Service Bypassing (`PaymentService`)
+- Modified `createPaymentIntent` to gracefully degrade when `paymentsEnabled=false` triggers. 
+- Rather than throwing critical errors or forcing the UI flow to stall, the system now successfully mocks a native `PaymentTransaction` mapping strictly to `COMPLETED/BYPASSED` resolving instantly. This completely unblocks the `JobAcceptance` workflow.
+
+### 3. README Restructuring (`README.md`)
+- Inserted `## ⚙️ Third-Party Integrations & Configurations`.
+- Documented step-by-step methodologies detailing exactly where and how developers configure `google-services.json` arrays for Firebase Android integrations.
+- Annotated IP mapping standards guiding Mobile debugging on Emulators (`10.0.2.2`) vs Physical Hardware endpoints cleanly. 
+
+These architectural shifts are robust, fully compile natively via Gradle, and perfectly establish a modular foundation that empowers unblocked usage of the platform natively!

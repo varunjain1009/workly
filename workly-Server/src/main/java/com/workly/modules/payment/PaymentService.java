@@ -6,6 +6,7 @@ import com.workly.modules.job.JobService;
 import com.workly.modules.job.JobStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,6 +19,9 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final JobService jobService;
+
+    @Value("${workly.features.payments.enabled:false}")
+    private boolean paymentsEnabled;
 
     public PaymentTransaction createPaymentIntent(String jobId, String seekerMobile) {
         log.debug("PaymentService: [ENTER] createPaymentIntent - jobId: {}, seeker: {}", jobId, seekerMobile);
@@ -35,6 +39,22 @@ public class PaymentService {
 
         if (paymentRepository.findByJobId(jobId).isPresent()) {
             throw WorklyException.badRequest("Payment Intent already exists for this job");
+        }
+
+        if (!paymentsEnabled) {
+            log.info("PaymentService: Payments are disabled via feature flag. Bypassing escrow for job {}", jobId);
+            PaymentTransaction bypassTx = new PaymentTransaction();
+            bypassTx.setJobId(jobId);
+            bypassTx.setSeekerMobileNumber(seekerMobile);
+            bypassTx.setWorkerMobileNumber(job.getWorkerMobileNumber());
+            bypassTx.setGrossAmount(0);
+            bypassTx.setDiscountAmount(0);
+            bypassTx.setCommissionAmount(0);
+            bypassTx.setNetProviderAmount(0);
+            bypassTx.setStatus(PaymentTransaction.TransactionStatus.COMPLETED);
+            bypassTx.setPaymentIntentId("BYPASSED");
+            PaymentTransaction savedBypass = paymentRepository.save(bypassTx);
+            return savedBypass;
         }
 
         PaymentTransaction tx = new PaymentTransaction();
