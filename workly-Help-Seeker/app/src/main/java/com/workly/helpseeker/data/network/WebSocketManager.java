@@ -55,7 +55,7 @@ public class WebSocketManager {
 
     public void sendMessage(ChatMessage message) {
         if (webSocket != null) {
-            appLogger.d(TAG, "WebSocketManager(Seeker): Sending message to: " + message.getReceiverId());
+            appLogger.d(TAG, "WebSocketManager(Seeker): Sending message to: " + message.receiverId);
             String json = gson.toJson(message);
             webSocket.send(json);
         } else {

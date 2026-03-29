@@ -43,7 +43,7 @@ public class WorkerAdapter extends RecyclerView.Adapter<WorkerAdapter.WorkerView
     @Override
     public void onBindViewHolder(@NonNull WorkerViewHolder holder, int position) {
         Worker targetWorker = workers.get(position);
-        appLogger.d("WORKLY_DEBUG", "WorkerAdapter: UI Binding viewholder index " + position + " | worker mobile: " + targetWorker.getMobileNumber());
+        appLogger.d("WORKLY_DEBUG", "WorkerAdapter: UI Binding viewholder index " + position + " | worker id: " + targetWorker.getId());
         holder.bind(targetWorker, listener);
     }
 
