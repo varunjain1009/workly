@@ -75,7 +75,7 @@ public class WebSocketManager {
 
     public void sendMessage(ChatMessage message) {
         if (webSocket != null) {
-            appLogger.d("WORKLY_DEBUG", "WebSocketManager: Sending message to: " + message.getReceiverId());
+            appLogger.d("WORKLY_DEBUG", "WebSocketManager: Sending message to: " + message.receiverId);
             webSocket.send(gson.toJson(message));
         } else {
             appLogger.e("WORKLY_DEBUG", "WebSocketManager: Cannot send - WebSocket is null");

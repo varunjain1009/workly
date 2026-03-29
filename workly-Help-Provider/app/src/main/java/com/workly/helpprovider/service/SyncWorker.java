@@ -17,7 +17,7 @@ public class SyncWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
-        AuthManager authManager = new AuthManager(getApplicationContext());
+        AuthManager authManager = new AuthManager(getApplicationContext(), new com.workly.helpprovider.util.AppLogger());
         if (!authManager.isLoggedIn())
             return Result.failure();
 

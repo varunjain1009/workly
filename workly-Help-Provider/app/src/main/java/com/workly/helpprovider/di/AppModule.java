@@ -3,6 +3,7 @@ package com.workly.helpprovider.di;
 import android.content.Context;
 
 import com.workly.helpprovider.data.auth.AuthManager;
+import com.workly.helpprovider.util.AppLogger;
 
 import javax.inject.Singleton;
 
@@ -18,7 +19,7 @@ public class AppModule {
 
     @Provides
     @Singleton
-    public AuthManager provideAuthManager(@ApplicationContext Context context) {
-        return new AuthManager(context);
+    public AuthManager provideAuthManager(@ApplicationContext Context context, AppLogger appLogger) {
+        return new AuthManager(context, appLogger);
     }
 }
