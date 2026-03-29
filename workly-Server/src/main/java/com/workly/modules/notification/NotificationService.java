@@ -35,11 +35,17 @@ public class NotificationService {
             return;
         }
 
+        Long scheduledTimeMillis = null;
+        if (!job.isImmediate() && job.getScheduledTime() != null) {
+            scheduledTimeMillis = job.getScheduledTime().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+        }
+
         java.util.List<com.workly.modules.profile.WorkerProfile> matchingWorkers = matchingService.findMatches(
                 job.getRequiredSkills(), // List<String>
                 job.getLocation()[0], // Longitude
                 job.getLocation()[1], // Latitude
-                job.getSearchRadiusKm()); // int
+                job.getSearchRadiusKm(), // int
+                scheduledTimeMillis);
 
         // Logic Refinement based on Job Type
         if (job.isImmediate()) {
@@ -48,13 +54,7 @@ public class NotificationService {
                 return;
             }
         } else if (job.getScheduledTime() != null) {
-            // Filter out workers who are unavailable at the scheduled time
-            long jobTime = job.getScheduledTime().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
-
-            matchingWorkers = matchingWorkers.stream()
-                    .filter(worker -> isWorkerAvailable(worker, jobTime))
-                    .collect(java.util.stream.Collectors.toList());
-
+            // Workers are already filtered by the DB query now via findMatchingWorkersAvailableAt
             if (matchingWorkers.isEmpty()) {
                 log.info("No available workers found for SCHEDULED job {} at {}. No notifications sent.", job.getId(),
                         job.getScheduledTime());
@@ -71,17 +71,7 @@ public class NotificationService {
         log.debug("NotificationService: [EXIT] handleJobCreated - All push notifications dispatched");
     }
 
-    private boolean isWorkerAvailable(com.workly.modules.profile.WorkerProfile worker, long jobTime) {
-        if (worker.getUnavailableSlots() == null || worker.getUnavailableSlots().isEmpty()) {
-            return true;
-        }
-        for (com.workly.modules.profile.WorkerProfile.UnavailableSlot slot : worker.getUnavailableSlots()) {
-            if (jobTime >= slot.getStartTime() && jobTime <= slot.getEndTime()) {
-                return false;
-            }
-        }
-        return true;
-    }
+    // Removed isWorkerAvailable as logic is now pushed to MongoDB aggregation
 
     @KafkaListener(topics = "job.status.updated", groupId = "notification-group")
     public void handleJobStatusUpdated(JobEvent event) {

@@ -3,6 +3,7 @@ package com.workly.modules.job;
 import com.workly.core.WorklyException;
 import com.workly.modules.job.outbox.OutboxEvent;
 import com.workly.modules.job.outbox.OutboxEventRepository;
+import com.workly.modules.profile.ProfileService;
 import com.workly.modules.search.SearchServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ public class JobService {
     private final JobAcceptanceService jobAcceptanceService;
     private final OutboxEventRepository outboxEventRepository;
     private final SearchServiceClient searchServiceClient;
+    private final ProfileService profileService;
 
     private static final String JOB_TOPIC = "job.created";
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
@@ -81,6 +83,19 @@ public class JobService {
                     String.format("Cannot transition from %s to %s", job.getStatus(), status));
         }
 
+        if (status == JobStatus.CANCELLED && job.getStatus() == JobStatus.ASSIGNED && job.getScheduledTime() != null) {
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            if (now.plusHours(2).isAfter(job.getScheduledTime()) || now.isAfter(job.getScheduledTime())) {
+                job.setPenaltyAmount(15.00);
+                job.setCancellationReason("LATE_CANCELLATION");
+                log.info("JobService: Applied late cancellation penalty for job {}", jobId);
+            }
+            // Free the worker's schedule
+            long startTime = job.getScheduledTime().minusHours(1).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+            long endTime = job.getScheduledTime().plusHours(2).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+            profileService.removeUnavailableSlot(job.getWorkerMobileNumber(), startTime, endTime);
+        }
+
         job.setStatus(status);
         Job savedJob = jobRepository.save(job);
 
@@ -102,6 +117,25 @@ public class JobService {
 
         if (!job.getSeekerMobileNumber().equals(requestingUserMobile)) {
             throw WorklyException.forbidden("You are not authorized to update this job");
+        }
+
+        if (jobDetails.getScheduledTime() != null && job.getStatus() == JobStatus.ASSIGNED) {
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            if (job.getScheduledTime() != null && (now.plusHours(2).isAfter(job.getScheduledTime()) || now.isAfter(job.getScheduledTime()))) {
+                job.setPenaltyAmount(10.00);
+                job.setCancellationReason("LATE_RESCHEDULE");
+                log.info("JobService: Applied late reschedule penalty for job {}", jobId);
+            }
+            // Release old slot
+            if (job.getScheduledTime() != null) {
+                long oldStartTime = job.getScheduledTime().minusHours(1).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+                long oldEndTime = job.getScheduledTime().plusHours(2).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+                profileService.removeUnavailableSlot(job.getWorkerMobileNumber(), oldStartTime, oldEndTime);
+            }
+            // Add new slot
+            long newStartTime = jobDetails.getScheduledTime().minusHours(1).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+            long newEndTime = jobDetails.getScheduledTime().plusHours(2).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+            profileService.addUnavailableSlot(job.getWorkerMobileNumber(), newStartTime, newEndTime);
         }
 
         if (jobDetails.getScheduledTime() != null) {

@@ -102,4 +102,29 @@ public class ProfileService {
         }
         log.debug("ProfileService: [EXIT] updateDeviceToken - Processing sequence finished.");
     }
+
+    @Transactional
+    public void addUnavailableSlot(String mobileNumber, long startTime, long endTime) {
+        getWorkerProfile(mobileNumber).ifPresent(p -> {
+            if (p.getUnavailableSlots() == null) {
+                p.setUnavailableSlots(new java.util.ArrayList<>());
+            }
+            WorkerProfile.UnavailableSlot slot = new WorkerProfile.UnavailableSlot();
+            slot.setStartTime(startTime);
+            slot.setEndTime(endTime);
+            p.getUnavailableSlots().add(slot);
+            workerRepository.save(p);
+        });
+    }
+
+    @Transactional
+    public void removeUnavailableSlot(String mobileNumber, long startTime, long endTime) {
+        getWorkerProfile(mobileNumber).ifPresent(p -> {
+            if (p.getUnavailableSlots() != null) {
+                p.getUnavailableSlots().removeIf(slot -> 
+                    slot.getStartTime() == startTime && slot.getEndTime() == endTime);
+                workerRepository.save(p);
+            }
+        });
+    }
 }

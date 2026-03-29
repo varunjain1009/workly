@@ -32,7 +32,8 @@ public class WorkerController {
                 Collections.singletonList(skill),
                 lon,
                 lat,
-                radius);
+                radius,
+                null);
 
         log.info("Found {} matching workers", workers.size());
         log.debug("WorkerController: [EXIT] searchWorkers - Returning API Response encompassing {} worker matches.", workers.size());

@@ -37,7 +37,7 @@ class MatchingServiceTest {
         when(workerRepository.findMatchingWorkers(skills, lon, lat, expectedDistanceMeters))
                 .thenReturn(mockWorkers);
 
-        List<WorkerProfile> result = matchingService.findMatches(skills, lon, lat, radiusKm);
+        List<WorkerProfile> result = matchingService.findMatches(skills, lon, lat, radiusKm, null);
 
         assertEquals(mockWorkers, result);
     }

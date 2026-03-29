@@ -8,6 +8,8 @@ import com.workly.modules.job.outbox.OutboxEvent;
 import com.workly.modules.job.outbox.OutboxEventRepository;
 import com.workly.modules.search.SearchServiceClient;
 
+import com.workly.modules.profile.ProfileService;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -30,12 +32,15 @@ class JobServiceTest {
     @Mock
     private JobAcceptanceService jobAcceptanceService;
 
+    @Mock
+    private ProfileService profileService;
+
     private JobService jobService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        jobService = new JobService(jobRepository, jobAcceptanceService, outboxEventRepository, searchServiceClient);
+        jobService = new JobService(jobRepository, jobAcceptanceService, outboxEventRepository, searchServiceClient, profileService);
     }
 
     @Test

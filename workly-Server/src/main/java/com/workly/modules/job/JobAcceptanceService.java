@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import com.workly.modules.profile.ProfileService;
 
 import java.time.Duration;
 
@@ -15,6 +16,7 @@ public class JobAcceptanceService {
 
     private final JobRepository jobRepository;
     private final StringRedisTemplate redisTemplate;
+    private final ProfileService profileService;
 
     private static final String JOB_LOCK_PREFIX = "lock:job:";
 
@@ -44,6 +46,14 @@ public class JobAcceptanceService {
             job.setStatus(JobStatus.ASSIGNED);
 
             Job saved = jobRepository.save(job);
+            
+            if (saved.getScheduledTime() != null) {
+                // Block off 2 hours around the scheduled time
+                long startTime = saved.getScheduledTime().minusHours(1).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+                long endTime = saved.getScheduledTime().plusHours(2).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+                profileService.addUnavailableSlot(workerMobileNumber, startTime, endTime);
+            }
+
             log.debug("JobAcceptanceService: [EXIT] acceptJob - Job {} assigned to worker {}", jobId, workerMobileNumber);
             return saved;
         } finally {

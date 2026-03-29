@@ -16,6 +16,7 @@ import java.util.List;
 public class JobController {
 
     private final JobService jobService;
+    private final com.workly.modules.profile.ProfileService profileService;
 
     @PostMapping
     public ApiResponse<com.workly.modules.job.dto.JobDTO> createJob(
@@ -142,6 +143,31 @@ public class JobController {
         return ApiResponse.success(toDto(jobService.updateJob(jobId, job, mobileNumber)), "Job updated successfully");
     }
 
+    @GetMapping("/{jobId}/tracking")
+    public ApiResponse<com.workly.modules.job.dto.LocationDTO> getTrackingLocation(@PathVariable String jobId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String mobileNumber = auth.getName();
+        
+        Job job = jobService.getJobById(jobId);
+        if (!job.getSeekerMobileNumber().equals(mobileNumber)) {
+            throw com.workly.core.WorklyException.forbidden("You do not own this job");
+        }
+        if (job.getStatus() != JobStatus.ASSIGNED) {
+            throw com.workly.core.WorklyException.badRequest("Tracking is only available when a worker is assigned");
+        }
+
+        com.workly.modules.profile.WorkerProfile worker = profileService.getWorkerProfile(job.getWorkerMobileNumber())
+                .orElseThrow(() -> com.workly.core.WorklyException.notFound("Worker profile not found"));
+        
+        com.workly.modules.job.dto.LocationDTO locationDto = new com.workly.modules.job.dto.LocationDTO();
+        if (worker.getLastLocation() != null && worker.getLastLocation().length >= 2) {
+            locationDto.setLongitude(worker.getLastLocation()[0]);
+            locationDto.setLatitude(worker.getLastLocation()[1]);
+        }
+        
+        return ApiResponse.success(locationDto, "Tracking fetched");
+    }
+
     private com.workly.modules.job.dto.JobDTO toDto(Job job) {
         com.workly.modules.job.dto.JobDTO dto = new com.workly.modules.job.dto.JobDTO();
         dto.setId(job.getId());
@@ -161,6 +187,8 @@ public class JobController {
             dto.setPreferredDateTime(
                     job.getScheduledTime().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli());
         }
+        dto.setPenaltyAmount(job.getPenaltyAmount());
+        dto.setCancellationReason(job.getCancellationReason());
 
         com.workly.modules.job.dto.LocationDTO locationDto = new com.workly.modules.job.dto.LocationDTO();
         locationDto.setAddress(job.getAddress());

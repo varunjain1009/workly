@@ -24,6 +24,9 @@ class JobAcceptanceServiceTest {
     private StringRedisTemplate redisTemplate;
 
     @Mock
+    private com.workly.modules.profile.ProfileService profileService;
+
+    @Mock
     private ValueOperations<String, String> valueOperations;
 
     private JobAcceptanceService jobAcceptanceService;
@@ -32,7 +35,7 @@ class JobAcceptanceServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        jobAcceptanceService = new JobAcceptanceService(jobRepository, redisTemplate);
+        jobAcceptanceService = new JobAcceptanceService(jobRepository, redisTemplate, profileService);
     }
 
     @Test

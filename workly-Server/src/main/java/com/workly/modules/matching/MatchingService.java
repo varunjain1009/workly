@@ -16,10 +16,15 @@ public class MatchingService {
     private final WorkerProfileRepository workerRepository;
 
     public List<WorkerProfile> findMatches(List<String> requiredSkills, double longitude, double latitude,
-            double radiusKm) {
-        log.debug("MatchingService: [ENTER] findMatches - skills: {}, lon: {}, lat: {}, radius: {}km", requiredSkills, longitude, latitude, radiusKm);
+            double radiusKm, Long scheduledTimeMillis) {
+        log.debug("MatchingService: [ENTER] findMatches - skills: {}, lon: {}, lat: {}, radius: {}km, scheduledTimeMillis: {}", requiredSkills, longitude, latitude, radiusKm, scheduledTimeMillis);
         double maxDistanceMeters = radiusKm * 1000;
-        List<WorkerProfile> results = workerRepository.findMatchingWorkers(requiredSkills, longitude, latitude, maxDistanceMeters);
+        List<WorkerProfile> results;
+        if (scheduledTimeMillis != null && scheduledTimeMillis > 0) {
+            results = workerRepository.findMatchingWorkersAvailableAt(requiredSkills, longitude, latitude, maxDistanceMeters, scheduledTimeMillis);
+        } else {
+            results = workerRepository.findMatchingWorkers(requiredSkills, longitude, latitude, maxDistanceMeters);
+        }
         log.debug("MatchingService: [EXIT] findMatches - Found {} matching workers within {}m radius", results.size(), maxDistanceMeters);
         return results;
     }

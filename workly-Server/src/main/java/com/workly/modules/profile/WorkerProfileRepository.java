@@ -11,6 +11,10 @@ public interface WorkerProfileRepository extends MongoRepository<WorkerProfile, 
     List<WorkerProfile> findMatchingWorkers(List<String> requiredSkills, double longitude, double latitude,
             double maxDistance);
 
+    @Query("{ 'available': true, 'skills': { $in: ?0 }, 'lastLocation': { $near: { $geometry: { type: 'Point', coordinates: [?1, ?2] }, $maxDistance: ?3 } }, 'unavailableSlots': { $not: { $elemMatch: { startTime: { $lte: ?4 }, endTime: { $gte: ?4 } } } } }")
+    List<WorkerProfile> findMatchingWorkersAvailableAt(List<String> requiredSkills, double longitude, double latitude,
+            double maxDistance, long targetTimeMillis);
+
     long countByCreatedAtAfter(java.time.LocalDateTime date);
 
     long countByCreatedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);

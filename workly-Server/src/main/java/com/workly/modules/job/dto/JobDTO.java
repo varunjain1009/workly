@@ -23,4 +23,6 @@ public class JobDTO {
     private JobStatus status;
     private boolean toolsRequired;
     private boolean immediate;
+    private Double penaltyAmount;
+    private String cancellationReason;
 }

@@ -37,4 +37,8 @@ public class Job extends MongoBaseEntity {
     private int searchRadiusKm;
 
     private String completionOtp;
+    
+    // Cancellation policy fields
+    private Double penaltyAmount;
+    private String cancellationReason;
 }
