@@ -17,4 +17,6 @@ public class SkillSeekerProfile extends MongoBaseEntity {
     private String email;
     private String profilePictureUrl;
     private String deviceToken;
+    private int totalReviews;
+    private double averageRating;
 }

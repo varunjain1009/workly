@@ -8,6 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import com.workly.modules.job.outbox.OutboxEvent;
+import com.workly.modules.job.outbox.OutboxEventRepository;
+
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -21,12 +24,15 @@ class ReviewServiceTest {
     @Mock
     private com.workly.modules.job.JobService jobService;
 
+    @Mock
+    private OutboxEventRepository outboxEventRepository;
+
     private ReviewService reviewService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        reviewService = new ReviewService(reviewRepository, jobService);
+        reviewService = new ReviewService(reviewRepository, jobService, outboxEventRepository);
     }
 
     @Test
@@ -42,8 +48,9 @@ class ReviewServiceTest {
         review.setRating(5);
 
         when(jobService.getJobById(jobId)).thenReturn(job);
-        when(reviewRepository.findByJobId(jobId)).thenReturn(Optional.empty());
+        when(reviewRepository.findByJobIdAndReviewerRole(jobId, Review.ReviewerRole.SEEKER)).thenReturn(Optional.empty());
         when(reviewRepository.save(review)).thenReturn(review);
+        when(outboxEventRepository.save(any(OutboxEvent.class))).thenReturn(new OutboxEvent());
 
         Review result = reviewService.submitReview(review, "123");
 

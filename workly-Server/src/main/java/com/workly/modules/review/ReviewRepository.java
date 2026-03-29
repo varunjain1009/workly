@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ReviewRepository extends MongoRepository<Review, String> {
-    List<Review> findByWorkerMobileNumber(String mobileNumber);
+    List<Review> findByWorkerMobileNumberAndReviewerRole(String mobileNumber, Review.ReviewerRole role);
 
-    Optional<Review> findByJobId(String jobId);
+    List<Review> findBySeekerMobileNumberAndReviewerRole(String mobileNumber, Review.ReviewerRole role);
+
+    Optional<Review> findByJobIdAndReviewerRole(String jobId, Review.ReviewerRole role);
 }

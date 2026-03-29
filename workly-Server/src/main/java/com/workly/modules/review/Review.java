@@ -17,4 +17,10 @@ public class Review extends MongoBaseEntity {
     private String workerMobileNumber;
     private int rating; // 1-5
     private String comment;
+    private ReviewerRole reviewerRole;
+
+    public enum ReviewerRole {
+        SEEKER, // Seeker left a review for the Worker
+        WORKER  // Worker left a review for the Seeker
+    }
 }

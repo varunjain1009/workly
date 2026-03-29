@@ -23,6 +23,8 @@ public class WorkerProfile extends MongoBaseEntity {
     private double hourlyRate;
     private boolean available;
     private double travelRadiusKm;
+    private int totalReviews;
+    private double averageRating;
 
     @GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2DSPHERE)
     private double[] lastLocation; // [longitude, latitude]

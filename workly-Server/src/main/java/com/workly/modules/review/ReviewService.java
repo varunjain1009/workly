@@ -3,6 +3,8 @@ package com.workly.modules.review;
 import com.workly.core.WorklyException;
 import com.workly.modules.job.Job;
 import com.workly.modules.job.JobStatus;
+import com.workly.modules.job.outbox.OutboxEvent;
+import com.workly.modules.job.outbox.OutboxEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ public class ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final com.workly.modules.job.JobService jobService;
+    private final OutboxEventRepository outboxEventRepository;
 
     public Review submitReview(Review review, String reviewerMobile) {
         log.debug("ReviewService: [ENTER] submitReview - jobId: {}, reviewer: {}, rating: {}", review.getJobId(), reviewerMobile, review.getRating());
@@ -31,27 +34,49 @@ public class ReviewService {
             throw WorklyException.badRequest("Reviews can only be submitted for completed jobs");
         }
 
-        if (!job.getSeekerMobileNumber().equals(reviewerMobile)) {
-            throw WorklyException.forbidden("Only the job seeker can submit a review");
+        Review.ReviewerRole role;
+        if (job.getSeekerMobileNumber().equals(reviewerMobile)) {
+            role = Review.ReviewerRole.SEEKER;
+        } else if (job.getWorkerMobileNumber().equals(reviewerMobile)) {
+            role = Review.ReviewerRole.WORKER;
+        } else {
+            throw WorklyException.forbidden("Only participants of this job can submit a review");
         }
 
-        if (reviewRepository.findByJobId(review.getJobId()).isPresent()) {
-            log.debug("ReviewService: [FAIL] Duplicate review attempt for job {}", review.getJobId());
-            throw WorklyException.badRequest("A review already exists for this job");
+        if (reviewRepository.findByJobIdAndReviewerRole(review.getJobId(), role).isPresent()) {
+            log.debug("ReviewService: [FAIL] Duplicate review attempt for job {} by role {}", review.getJobId(), role);
+            throw WorklyException.badRequest("A review already exists from your side for this job");
         }
 
         review.setSeekerMobileNumber(job.getSeekerMobileNumber());
         review.setWorkerMobileNumber(job.getWorkerMobileNumber());
+        review.setReviewerRole(role);
 
         Review saved = reviewRepository.save(review);
         log.debug("ReviewService: [EXIT] submitReview - Review persisted with rating {}", saved.getRating());
+
+        // Save to Outbox for asynchronous profile update via Kafka
+        OutboxEvent event = new OutboxEvent();
+        event.setTopic("review.submitted");
+        event.setPayload(saved);
+        outboxEventRepository.save(event);
+
         return saved;
     }
 
     public List<Review> getWorkerReviews(String mobileNumber) {
         log.debug("ReviewService: [ENTER] getWorkerReviews - mobile: {}", mobileNumber);
-        List<Review> reviews = reviewRepository.findByWorkerMobileNumber(mobileNumber);
+        // Reviews about worker are written by seeker
+        List<Review> reviews = reviewRepository.findByWorkerMobileNumberAndReviewerRole(mobileNumber, Review.ReviewerRole.SEEKER);
         log.debug("ReviewService: [EXIT] getWorkerReviews - Found {} reviews", reviews.size());
+        return reviews;
+    }
+
+    public List<Review> getSeekerReviews(String mobileNumber) {
+        log.debug("ReviewService: [ENTER] getSeekerReviews - mobile: {}", mobileNumber);
+        // Reviews about seeker are written by worker
+        List<Review> reviews = reviewRepository.findBySeekerMobileNumberAndReviewerRole(mobileNumber, Review.ReviewerRole.WORKER);
+        log.debug("ReviewService: [EXIT] getSeekerReviews - Found {} reviews", reviews.size());
         return reviews;
     }
 
@@ -65,5 +90,14 @@ public class ReviewService {
         double avg = reviews.stream().mapToInt(Review::getRating).average().orElse(0.0);
         log.debug("ReviewService: [EXIT] getAverageRating - Average: {} from {} reviews", avg, reviews.size());
         return avg;
+    }
+
+    public double getSeekerAverageRating(String mobileNumber) {
+        log.debug("ReviewService: [ENTER] getSeekerAverageRating - mobile: {}", mobileNumber);
+        List<Review> reviews = getSeekerReviews(mobileNumber);
+        if (reviews.isEmpty()) {
+            return 0.0;
+        }
+        return reviews.stream().mapToInt(Review::getRating).average().orElse(0.0);
     }
 }
