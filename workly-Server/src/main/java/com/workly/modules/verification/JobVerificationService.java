@@ -5,11 +5,13 @@ import com.workly.modules.job.Job;
 import com.workly.modules.job.JobRepository;
 import com.workly.modules.job.JobStatus;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class JobVerificationService {
@@ -19,18 +21,21 @@ public class JobVerificationService {
 
     @Transactional
     public JobCompletion verifyAndCompleteJob(String jobId, String otp) {
+        log.debug("JobVerificationService: [ENTER] verifyAndCompleteJob - jobId: {}", jobId);
         Job mongoJob = mongoJobRepository.findById(jobId)
                 .orElseThrow(() -> WorklyException.notFound("Job not found in MongoDB"));
 
-        if (!mongoJob.getCompletionOtp().equals(otp)) {
+        if (otp == null || mongoJob.getCompletionOtp() == null || !mongoJob.getCompletionOtp().equals(otp)) {
+            log.debug("JobVerificationService: [FAIL] OTP mismatch for job {}", jobId);
             throw WorklyException.badRequest("Invalid completion OTP");
         }
 
         if (mongoJob.getStatus() == JobStatus.COMPLETED) {
+            log.debug("JobVerificationService: [FAIL] Job {} is already completed", jobId);
             throw WorklyException.badRequest("Job is already completed");
         }
 
-        // 1. Update/Create PostgreSQL state FIRST
+        log.debug("JobVerificationService: OTP verified. Creating PostgreSQL completion record");
         JobCompletion completion = jpaJobRepository.findByJobId(jobId)
                 .orElse(new JobCompletion());
 
@@ -42,14 +47,12 @@ public class JobVerificationService {
         completion.setCompletedAt(LocalDateTime.now());
 
         JobCompletion savedCompletion = jpaJobRepository.save(completion);
+        log.debug("JobVerificationService: PostgreSQL completion record saved. Updating MongoDB status");
 
-        // 2. Update MongoDB state LAST.
-        // If this throws, the above JPA save automatically rolls back because of
-        // @Transactional.
-        // If the JPA save above throws, this MongoDB save is never reached.
         mongoJob.setStatus(JobStatus.COMPLETED);
         mongoJobRepository.save(mongoJob);
 
+        log.debug("JobVerificationService: [EXIT] verifyAndCompleteJob - Dual-database commit complete for job {}", jobId);
         return savedCompletion;
     }
 }

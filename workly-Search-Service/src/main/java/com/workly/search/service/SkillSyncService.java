@@ -40,6 +40,7 @@ public class SkillSyncService {
     }
 
     private void createSkill(String id, String name, List<String> aliases, String phonetic) {
+        log.debug("SkillSyncService: createSkill - id: {}, name: {}, aliases: {}, phonetic: {}", id, name, aliases, phonetic);
         Skill skill = new Skill();
         skill.setId(id);
         skill.setCanonicalName(name);
@@ -47,10 +48,14 @@ public class SkillSyncService {
         skill.setPhonetic(phonetic);
         skill.setStatus("ACTIVE");
         skillRepository.save(skill);
+        log.debug("SkillSyncService: createSkill - saved skill id: {}", id);
     }
 
     public List<Skill> getAllSkills() {
-        return skillRepository.findAll();
+        log.debug("SkillSyncService: [ENTER] getAllSkills");
+        List<Skill> skills = skillRepository.findAll();
+        log.debug("SkillSyncService: [EXIT] getAllSkills - count: {}", skills.size());
+        return skills;
     }
 
     public void addAliases(String canonicalName, List<String> newAliases) {
@@ -77,6 +82,7 @@ public class SkillSyncService {
     }
 
     private SkillDocument toDocument(Skill skill) {
+        log.debug("SkillSyncService: toDocument - skillId: {}, name: {}", skill.getId(), skill.getCanonicalName());
         SkillDocument doc = new SkillDocument();
         doc.setId(skill.getId());
         doc.setCanonicalName(skill.getCanonicalName());

@@ -2,6 +2,7 @@ package com.workly.chat.config;
 
 import com.workly.chat.handler.ChatWebSocketHandler;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
@@ -18,6 +19,7 @@ import java.util.Map;
 @Configuration
 @EnableWebSocket
 @RequiredArgsConstructor
+@Slf4j
 public class WebSocketConfig implements WebSocketConfigurer {
 
     @NonNull
@@ -37,11 +39,14 @@ public class WebSocketConfig implements WebSocketConfigurer {
                         // In production, verify JWT token from Header/Query
                         // For MVP: Simple userId extraction
                         String query = request.getURI().getQuery();
+                        log.debug("WebSocketConfig: beforeHandshake - URI: {}", request.getURI());
                         if (query != null && query.contains("userId=")) {
                             String userId = query.split("userId=")[1].split("&")[0];
                             attributes.put("userId", userId);
+                            log.debug("WebSocketConfig: beforeHandshake - userId extracted, handshake allowed");
                             return true;
                         }
+                        log.debug("WebSocketConfig: beforeHandshake - no userId param, handshake rejected");
                         return false;
                     }
 

@@ -37,13 +37,12 @@ public class HomeFragment extends Fragment {
     private FragmentHomeBinding binding;
     private JobAdapter adapter;
     private JobViewModel viewModel;
-    private boolean debugEnabled = false;
 
     @Inject
     ApiService apiService;
 
     @Inject
-    Properties properties;
+    com.workly.helpseeker.util.AppLogger appLogger;
 
     @Nullable
     @Override
@@ -59,7 +58,6 @@ public class HomeFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        debugEnabled = Boolean.parseBoolean(properties.getProperty("app.debug_enabled", "false"));
 
         setupRecyclerView();
         observeViewModel();
@@ -96,14 +94,12 @@ public class HomeFragment extends Fragment {
     private void observeViewModel() {
         viewModel.getJobs().observe(getViewLifecycleOwner(), jobs -> {
             if (jobs == null || jobs.isEmpty()) {
-                if (debugEnabled)
-                    Log.d(TAG, "No jobs returned from server.");
+                appLogger.d(TAG, "No jobs returned from server.");
                 binding.rvJobs.setVisibility(View.GONE);
                 binding.tvEmptyState.setVisibility(View.VISIBLE);
                 adapter.setJobs(new java.util.ArrayList<>());
             } else {
-                if (debugEnabled)
-                    Log.d(TAG, "Successfully loaded " + jobs.size() + " jobs.");
+                appLogger.d(TAG, "Successfully loaded " + jobs.size() + " jobs.");
                 binding.rvJobs.setVisibility(View.VISIBLE);
                 binding.tvEmptyState.setVisibility(View.GONE);
                 adapter.setJobs(jobs);
@@ -126,7 +122,7 @@ public class HomeFragment extends Fragment {
             Bundle args = new Bundle();
             args.putSerializable("job", job);
             Navigation.findNavController(binding.rvJobs).navigate(R.id.action_home_to_jobDetails, args);
-        });
+        }, appLogger);
         binding.rvJobs.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.rvJobs.setAdapter(adapter);
     }

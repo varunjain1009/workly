@@ -12,26 +12,32 @@ import java.util.List;
 public class ChatViewModel extends ViewModel {
 
     private final ChatRepository chatRepository;
+    private final com.workly.helpprovider.util.AppLogger appLogger;
     private String currentUserId;
     private String otherUserId;
+    private static final String TAG = "WORKLY_DEBUG";
 
     @Inject
-    public ChatViewModel(ChatRepository chatRepository) {
+    public ChatViewModel(ChatRepository chatRepository, com.workly.helpprovider.util.AppLogger appLogger) {
         this.chatRepository = chatRepository;
+        this.appLogger = appLogger;
     }
 
     public void init(String userId, String otherUserId) {
+        appLogger.d(TAG, "ChatViewModel(Provider): Initializing chat session - user: " + userId + " <-> " + otherUserId);
         this.currentUserId = userId;
         this.otherUserId = otherUserId;
         chatRepository.connect(userId);
     }
 
     public LiveData<List<ChatMessage>> getMessages() {
+        appLogger.d(TAG, "ChatViewModel(Provider): Subscribing to message LiveData");
         return chatRepository.getMessages(currentUserId, otherUserId);
     }
 
     public void sendMessage(String content) {
         if (content != null && !content.trim().isEmpty()) {
+            appLogger.d(TAG, "ChatViewModel(Provider): Queueing message for delivery");
             chatRepository.sendMessage(currentUserId, otherUserId, content);
         }
     }
@@ -39,6 +45,7 @@ public class ChatViewModel extends ViewModel {
     @Override
     protected void onCleared() {
         super.onCleared();
+        appLogger.d(TAG, "ChatViewModel(Provider): ViewModel cleared - disconnecting WebSocket");
         chatRepository.disconnect();
     }
 }

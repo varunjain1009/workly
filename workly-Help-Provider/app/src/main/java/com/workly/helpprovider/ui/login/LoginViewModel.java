@@ -19,6 +19,8 @@ import retrofit2.Response;
 public class LoginViewModel extends ViewModel {
 
     private final AuthRepository authRepository;
+    private final com.workly.helpprovider.util.AppLogger appLogger;
+    private static final String TAG = "WORKLY_DEBUG";
 
     private final MutableLiveData<Boolean> isLoading = new MutableLiveData<>(false);
     private final MutableLiveData<String> error = new MutableLiveData<>();
@@ -26,8 +28,9 @@ public class LoginViewModel extends ViewModel {
     private final MutableLiveData<Boolean> loginSuccess = new MutableLiveData<>(false);
 
     @Inject
-    public LoginViewModel(AuthRepository authRepository) {
+    public LoginViewModel(AuthRepository authRepository, com.workly.helpprovider.util.AppLogger appLogger) {
         this.authRepository = authRepository;
+        this.appLogger = appLogger;
     }
 
     public LiveData<Boolean> getIsLoading() {
@@ -47,14 +50,17 @@ public class LoginViewModel extends ViewModel {
     }
 
     public void requestOtp(String mobileNumber) {
+        appLogger.d(TAG, "LoginViewModel: Requesting OTP for " + mobileNumber);
         isLoading.setValue(true);
         authRepository.requestOtp(mobileNumber, new Callback<ApiResponse<Void>>() {
             @Override
             public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
                 isLoading.setValue(false);
                 if (response.isSuccessful()) {
+                    appLogger.d(TAG, "OTP successfully requested via Auth Repository.");
                     otpSent.setValue(true);
                 } else {
+                    appLogger.e(TAG, "Failed to send OTP via API: " + response.message());
                     error.setValue("Failed to send OTP: " + response.message());
                 }
             }
@@ -62,20 +68,24 @@ public class LoginViewModel extends ViewModel {
             @Override
             public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
                 isLoading.setValue(false);
+                appLogger.e(TAG, "Network error during OTP request: " + t.getMessage(), t);
                 error.setValue("Network error: " + t.getMessage());
             }
         });
     }
 
     public void verifyOtp(String mobileNumber, String otp) {
+        appLogger.d(TAG, "LoginViewModel: Verifying OTP for " + mobileNumber);
         isLoading.setValue(true);
         authRepository.login(mobileNumber, otp, new Callback<ApiResponse<AuthResponse>>() {
             @Override
             public void onResponse(Call<ApiResponse<AuthResponse>> call, Response<ApiResponse<AuthResponse>> response) {
                 isLoading.setValue(false);
                 if (response.isSuccessful() && response.body() != null) {
+                    appLogger.d(TAG, "OTP successfully verified, login successful via Auth Repository.");
                     loginSuccess.setValue(true);
                 } else {
+                    appLogger.e(TAG, "Failed login verification via API: " + response.message());
                     error.setValue("Login failed: " + response.message());
                 }
             }
@@ -83,6 +93,7 @@ public class LoginViewModel extends ViewModel {
             @Override
             public void onFailure(Call<ApiResponse<AuthResponse>> call, Throwable t) {
                 isLoading.setValue(false);
+                appLogger.e(TAG, "Network error during Login verification: " + t.getMessage(), t);
                 error.setValue("Network error: " + t.getMessage());
             }
         });

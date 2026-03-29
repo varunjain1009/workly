@@ -27,7 +27,9 @@ public class AutocompleteService {
     private static final String CACHE_PREFIX = "autocomplete:";
 
     public List<String> autocomplete(String query) {
+        log.debug("AutocompleteService: [ENTER] autocomplete - query: '{}'", query);
         if (query == null || query.trim().isEmpty()) {
+            log.debug("AutocompleteService: autocomplete - empty query, returning empty list");
             return List.of();
         }
 
@@ -37,8 +39,11 @@ public class AutocompleteService {
         // 1. Check Cache
         String cachedResult = redisTemplate.opsForValue().get(cacheKey);
         if (cachedResult != null) {
-            return List.of(cachedResult.split(","));
+            List<String> cached = List.of(cachedResult.split(","));
+            log.debug("AutocompleteService: [EXIT] autocomplete - cache HIT for '{}', {} results", normalizedQuery, cached.size());
+            return cached;
         }
+        log.debug("AutocompleteService: autocomplete - cache MISS for '{}', querying Elasticsearch", normalizedQuery);
 
         // 2. Query Elasticsearch
         List<String> results = searchInElasticsearch(normalizedQuery);
@@ -46,12 +51,15 @@ public class AutocompleteService {
         // 3. Cache Result (if not empty)
         if (!results.isEmpty()) {
             redisTemplate.opsForValue().set(cacheKey, String.join(",", results), Duration.ofMinutes(30));
+            log.debug("AutocompleteService: autocomplete - cached {} results for '{}'", results.size(), normalizedQuery);
         }
 
+        log.debug("AutocompleteService: [EXIT] autocomplete - query: '{}', {} results", normalizedQuery, results.size());
         return results;
     }
 
     private List<String> searchInElasticsearch(String query) {
+        log.debug("AutocompleteService: [ENTER] searchInElasticsearch - query: '{}'", query);
         // Construct Criteria Query
         // Match prefix OR fuzzy OR alias match
         Criteria criteria = new Criteria("canonicalName").contains(query)
@@ -62,9 +70,12 @@ public class AutocompleteService {
                 .setPageable(PageRequest.of(0, 5));
 
         SearchHits<SkillDocument> hits = elasticsearchOperations.search(searchQuery, SkillDocument.class);
-        return hits.stream()
+        List<String> results = hits.stream()
                 .map(hit -> hit.getContent().getCanonicalName())
                 .distinct()
                 .collect(Collectors.toList());
+        log.debug("AutocompleteService: [EXIT] searchInElasticsearch - query: '{}', totalHits: {}, distinct results: {}",
+                query, hits.getTotalHits(), results.size());
+        return results;
     }
 }

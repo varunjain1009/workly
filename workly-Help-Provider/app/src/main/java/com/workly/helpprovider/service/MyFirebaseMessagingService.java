@@ -28,9 +28,12 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     @Inject
     com.workly.helpprovider.data.config.ConfigManager configManager;
 
+    @Inject
+    com.workly.helpprovider.util.AppLogger appLogger;
+
     @Override
     public void onNewToken(@NonNull String token) {
-        Log.d(TAG, "Refreshed token: " + token);
+        appLogger.d(TAG, "Refreshed token: " + token);
 
         // If you want to send messages to this application instance or
         // manage this apps subscriptions on the server side, send the
@@ -56,15 +59,15 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         // Not getting messages here? See why this may be: https://goo.gl/39bRNJ
-        Log.d(TAG, "From: " + remoteMessage.getFrom());
+        appLogger.d(TAG, "From: " + remoteMessage.getFrom());
 
         // Check if message contains a data payload.
         if (remoteMessage.getData().size() > 0) {
-            Log.d(TAG, "Message data payload: " + remoteMessage.getData());
+            appLogger.d(TAG, "Message data payload: " + remoteMessage.getData());
 
             String title = remoteMessage.getData().get("title");
             if ("CONFIG_UPDATE".equals(title) || "CONFIG_UPDATE".equals(remoteMessage.getData().get("type"))) {
-                Log.d(TAG, "Received Config Update Notification");
+                appLogger.d(TAG, "Received Config Update Notification");
                 configManager.syncConfig();
             }
 
@@ -79,7 +82,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         // Check if message contains a notification payload.
         if (remoteMessage.getNotification() != null) {
-            Log.d(TAG, "Message Notification Body: " + remoteMessage.getNotification().getBody());
+            appLogger.d(TAG, "Message Notification Body: " + remoteMessage.getNotification().getBody());
             // Show notification if app is in foreground, otherwise system handles it.
         }
 

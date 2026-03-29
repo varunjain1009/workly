@@ -20,9 +20,13 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private MainViewModel viewModel;
 
+    @javax.inject.Inject
+    com.workly.helpprovider.util.AppLogger appLogger;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        appLogger.d(TAG, "MainActivity created/recreated.");
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
@@ -54,7 +58,26 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void redirectToLogin() {
+        appLogger.w(TAG, "Session invalid. Redirecting user to LoginActivity.");
         startActivity(new Intent(this, LoginActivity.class));
         finish();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        appLogger.d(TAG, "MainActivity entered foreground (onResume).");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        appLogger.d(TAG, "MainActivity entering background (onPause).");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        appLogger.d(TAG, "MainActivity destroyed.");
     }
 }

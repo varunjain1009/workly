@@ -17,13 +17,16 @@ public class NotificationService {
 
     @KafkaListener(topics = "job.created", groupId = "notification-group")
     public void handleJobCreated(JobEvent event) {
+        log.debug("NotificationService: [ENTER] handleJobCreated - Kafka event consumed for jobId: {}", event.getJobId());
         log.info("Received job.created event for jobId: {}", event.getJobId());
 
         com.workly.modules.job.Job job = jobRepository.findById(event.getJobId()).orElse(null);
         if (job == null) {
+            log.debug("NotificationService: [FAIL] Job entity {} not found in MongoDB", event.getJobId());
             log.error("Job not found for notification: {}", event.getJobId());
             return;
         }
+        log.debug("NotificationService: Loaded job {} - type: immediate={}, location: {}", job.getId(), job.isImmediate(), job.getLocation());
 
         // Find matching workers
         // Job location is double[] {lon, lat}
@@ -60,10 +63,12 @@ public class NotificationService {
         }
 
         // In a real scenario, this would call FCM Admin SDK for the filtered list
+        log.debug("NotificationService: Dispatching FCM push to {} matched workers", matchingWorkers.size());
         for (com.workly.modules.profile.WorkerProfile worker : matchingWorkers) {
             sendPushNotification(worker.getDeviceToken(), "New Job Available",
                     "A job matching your skills is available.");
         }
+        log.debug("NotificationService: [EXIT] handleJobCreated - All push notifications dispatched");
     }
 
     private boolean isWorkerAvailable(com.workly.modules.profile.WorkerProfile worker, long jobTime) {
@@ -80,9 +85,10 @@ public class NotificationService {
 
     @KafkaListener(topics = "job.status.updated", groupId = "notification-group")
     public void handleJobStatusUpdated(JobEvent event) {
+        log.debug("NotificationService: [ENTER] handleJobStatusUpdated - jobId: {}, newStatus: {}", event.getJobId(), event.getStatus());
         log.info("Received job.status.updated event for jobId: {} with status: {}", event.getJobId(),
                 event.getStatus());
-        // Notify seeker or worker based on status change
+        log.debug("NotificationService: [EXIT] handleJobStatusUpdated - Status change notification pending implementation");
     }
 
     private void sendPushNotification(String topicOrToken, String title, String body) {

@@ -17,6 +17,10 @@ graph TD
         Search[Search Service]
         Config[Config Service]
         Consumer[Notification Service]
+        
+        %% Upcoming
+        Payment[Payment Service]
+        Review[Review Service]
     end
 
     ClientS -->|HTTP / REST| API
@@ -253,3 +257,13 @@ sequenceDiagram
   - `GET /api/v1/config/public` - Fetch latest configuration
   - `POST /api/v1/config/sync` - Acknowledge sync completion
 - **Mobile Integration**: Apps listen for `CONFIG_UPDATE` FCM messages and trigger `ConfigManager.syncConfig()`
+
+---
+
+## Future Architecture Enhancements
+
+To see the detailed business functionality gaps this architecture will address, refer to the [Product Roadmap](PRODUCT_ROADMAP.md). Upcoming architectural changes include:
+
+*   **Payment & Escrow Layer**: Integration of a dedicated internal service communicating with Stripe/Razorpay via HTTP. This will hold funds in a `Postgres` transactions table before disbursing via payout APIs.
+*   **KYC & Verification**: A background worker to pass provider uploaded ID documents to a 3rd party OCR/verification service, updating the `Mongo` user context asynchronously.
+*   **Review Engine**: An asynchronous feedback processing engine using `Kafka` logging and aggregated in `Elasticsearch` for swift provider ranking changes upon new reviews.

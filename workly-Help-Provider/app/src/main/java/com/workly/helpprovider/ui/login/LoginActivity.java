@@ -28,6 +28,9 @@ public class LoginActivity extends AppCompatActivity {
     @javax.inject.Inject
     com.workly.helpprovider.data.config.ConfigManager configManager;
 
+    @javax.inject.Inject
+    com.workly.helpprovider.util.AppLogger appLogger;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -62,7 +65,7 @@ public class LoginActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                binding.btnSendOtp.setEnabled(s.length() == 10);
+                binding.btnSendOtp.setEnabled(s.length() == 10 && s.toString().matches("\\d{10}"));
             }
 
             @Override
@@ -77,7 +80,7 @@ public class LoginActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                binding.btnVerifyOtp.setEnabled(s.length() == 4);
+                binding.btnVerifyOtp.setEnabled(s.length() == 4 && s.toString().matches("\\d{4}"));
             }
 
             @Override
@@ -87,7 +90,7 @@ public class LoginActivity extends AppCompatActivity {
 
         binding.btnSendOtp.setOnClickListener(v -> {
             String phone = binding.etPhone.getText().toString();
-            if (phone.length() == 10) {
+            if (phone.matches("\\d{10}")) {
                 viewModel.requestOtp(phone);
             } else {
                 binding.tilPhone.setError("Invalid mobile number");
@@ -104,14 +107,14 @@ public class LoginActivity extends AppCompatActivity {
     private void observeViewModel() {
         viewModel.getIsLoading().observe(this, isLoading -> {
             // TODO: Add progressBar to layout - binding.progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
-            binding.btnSendOtp.setEnabled(!isLoading && binding.etPhone.getText().length() == 10);
-            binding.btnVerifyOtp.setEnabled(!isLoading && binding.etOtp.getText().length() == 4);
+            binding.btnSendOtp.setEnabled(!isLoading && binding.etPhone.getText().toString().matches("\\d{10}"));
+            binding.btnVerifyOtp.setEnabled(!isLoading && binding.etOtp.getText().toString().matches("\\d{4}"));
         });
 
         viewModel.getError().observe(this, error -> {
             if (error != null) {
                 Toast.makeText(this, error, Toast.LENGTH_SHORT).show();
-                Log.e(TAG, "Login Error: " + error);
+                appLogger.e(TAG, "Login Error: " + error);
             }
         });
 
@@ -152,7 +155,8 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onFinish() {
                 binding.btnSendOtp.setText("RESEND OTP");
-                binding.btnSendOtp.setEnabled(binding.etPhone.getText().length() == 10);
+                String phone = binding.etPhone.getText().toString();
+                binding.btnSendOtp.setEnabled(phone.matches("\\d{10}"));
             }
         }.start();
     }

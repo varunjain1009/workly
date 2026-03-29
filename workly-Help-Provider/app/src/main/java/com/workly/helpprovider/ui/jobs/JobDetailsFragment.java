@@ -20,12 +20,18 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import javax.inject.Inject;
+
 @AndroidEntryPoint
 public class JobDetailsFragment extends Fragment {
 
     private FragmentJobDetailsBinding binding;
     private JobDetailsViewModel viewModel;
     private Job job;
+    private static final String TAG = "WORKLY_DEBUG";
+
+    @Inject
+    com.workly.helpprovider.util.AppLogger appLogger;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -42,12 +48,14 @@ public class JobDetailsFragment extends Fragment {
         if (getArguments() != null) {
             job = (Job) getArguments().getSerializable("job");
             if (job != null) {
+                appLogger.d(TAG, "JobDetailsFragment(Provider): Displaying job: " + job.getId() + " - " + job.getTitle());
                 displayJobDetails(job);
             }
         }
 
         binding.btnAcceptJob.setOnClickListener(v -> {
             if (job != null) {
+                appLogger.d(TAG, "JobDetailsFragment(Provider): Accepting job: " + job.getId());
                 viewModel.acceptJob(job.getId());
             }
         });
@@ -55,9 +63,11 @@ public class JobDetailsFragment extends Fragment {
         binding.btnCompleteJob.setOnClickListener(v -> {
             if (job != null) {
                 String otp = binding.etOtp.getText().toString();
-                if (otp.length() == 4) {
+                if (otp.length() == 4 && otp.matches("\\d{4}")) {
+                    appLogger.d(TAG, "JobDetailsFragment(Provider): Completing job " + job.getId() + " with OTP");
                     viewModel.completeJob(job.getId(), otp);
                 } else {
+                    appLogger.d(TAG, "JobDetailsFragment(Provider): Invalid OTP: " + otp.length() + " chars");
                     Toast.makeText(getContext(), "Please enter a valid 4-digit OTP", Toast.LENGTH_SHORT).show();
                 }
             }

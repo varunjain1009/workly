@@ -24,12 +24,15 @@ public class SearchServiceClient {
     private String searchServiceUrl;
 
     public List<String> normalizeSkills(List<String> skills) {
+        log.debug("SearchServiceClient: [ENTER] normalizeSkills - input skills: {}", skills);
         if (skills == null || skills.isEmpty()) {
+            log.debug("SearchServiceClient: [EXIT] normalizeSkills - Empty input, returning empty list");
             return Collections.emptyList();
         }
 
         try {
             String url = searchServiceUrl + "/api/v1/normalization/skills";
+            log.debug("SearchServiceClient: Calling external search service at: {}", url);
             HttpEntity<List<String>> request = new HttpEntity<>(skills);
 
             ResponseEntity<List<String>> response = restTemplate.exchange(
@@ -40,12 +43,14 @@ public class SearchServiceClient {
                     });
 
             if (response.getBody() != null) {
+                log.debug("SearchServiceClient: [EXIT] normalizeSkills - Received {} normalized skills", response.getBody().size());
                 return response.getBody();
             }
         } catch (Exception e) {
+            log.debug("SearchServiceClient: [FAIL] normalizeSkills - External service error: {}", e.getMessage());
             log.error("Failed to call search service for normalization", e);
-            // Fallback to original skills
         }
+        log.debug("SearchServiceClient: [EXIT] normalizeSkills - Falling back to original skills");
         return skills;
     }
 }

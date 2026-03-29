@@ -26,6 +26,11 @@ public class ChatFragment extends Fragment {
     @Inject
     AuthManager authManager;
 
+    @Inject
+    com.workly.helpseeker.util.AppLogger appLogger;
+
+    private static final String TAG = "WORKLY_DEBUG";
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentChatBinding.inflate(inflater, container, false);
@@ -35,6 +40,7 @@ public class ChatFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        appLogger.d(TAG, "ChatFragment generic View created.");
         viewModel = new ViewModelProvider(this).get(ChatViewModel.class);
 
         // Get arguments (e.g., from JobDetails)
@@ -51,7 +57,10 @@ public class ChatFragment extends Fragment {
         setupListeners();
 
         if (myUserId != null && otherUserId != null) {
+            appLogger.d(TAG, "Initializing ViewModel with myUserId=" + myUserId + ", otherUserId=" + otherUserId);
             viewModel.init(myUserId, otherUserId);
+        } else {
+            appLogger.e(TAG, "Missing UserIDs. myUserId=" + myUserId + ", otherUserId=" + otherUserId);
         }
     }
 
@@ -74,7 +83,9 @@ public class ChatFragment extends Fragment {
 
     private void setupListeners() {
         binding.btnSendMessage.setOnClickListener(v -> {
-            String content = binding.etMessageInput.getText().toString();
+            String content = binding.etMessageInput.getText().toString().trim();
+            if (content.isEmpty()) return;
+            appLogger.d(TAG, "User clicked Send. Content length: " + content.length());
             viewModel.sendMessage(content);
             binding.etMessageInput.setText("");
         });

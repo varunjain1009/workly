@@ -21,9 +21,13 @@ public class ChatFragment extends Fragment {
     private ChatViewModel viewModel;
     private ChatAdapter adapter;
     private String otherUserId;
+    private static final String TAG = "WORKLY_DEBUG";
 
     @Inject
     AuthManager authManager;
+
+    @Inject
+    com.workly.helpprovider.util.AppLogger appLogger;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -41,6 +45,7 @@ public class ChatFragment extends Fragment {
         }
 
         String myUserId = authManager.getMobileNumber();
+        appLogger.d(TAG, "ChatFragment(Provider): Initialized - myUserId: " + myUserId + ", otherUserId: " + otherUserId);
 
         setupRecyclerView(myUserId);
         setupObservers();
@@ -48,6 +53,8 @@ public class ChatFragment extends Fragment {
 
         if (myUserId != null && otherUserId != null) {
             viewModel.init(myUserId, otherUserId);
+        } else {
+            appLogger.e(TAG, "ChatFragment(Provider): Cannot init chat - missing userId(s)");
         }
     }
 
@@ -60,6 +67,7 @@ public class ChatFragment extends Fragment {
     private void setupObservers() {
         viewModel.getMessages().observe(getViewLifecycleOwner(), messages -> {
             if (messages != null) {
+                appLogger.d(TAG, "ChatFragment(Provider): " + messages.size() + " messages in conversation");
                 adapter.setMessages(messages);
                 if (!messages.isEmpty()) {
                     binding.rvChatMessages.scrollToPosition(messages.size() - 1);
@@ -70,7 +78,9 @@ public class ChatFragment extends Fragment {
 
     private void setupListeners() {
         binding.btnSendMessage.setOnClickListener(v -> {
-            String content = binding.etMessageInput.getText().toString();
+            String content = binding.etMessageInput.getText().toString().trim();
+            if (content.isEmpty()) return;
+            appLogger.d(TAG, "ChatFragment(Provider): Sending message (" + content.length() + " chars)");
             viewModel.sendMessage(content);
             binding.etMessageInput.setText("");
         });

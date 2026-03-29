@@ -33,13 +33,12 @@ public class JobDetailsFragment extends Fragment {
     private static final String TAG = "WORKLY_DEBUG";
     private FragmentJobDetailsBinding binding;
     private Job job;
-    private boolean debugEnabled = false;
 
     @Inject
     ApiService apiService;
 
     @Inject
-    Properties properties;
+    com.workly.helpseeker.util.AppLogger appLogger;
 
     @Nullable
     @Override
@@ -52,7 +51,6 @@ public class JobDetailsFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        debugEnabled = Boolean.parseBoolean(properties.getProperty("app.debug_enabled", "false"));
 
         binding.toolbar.setNavigationOnClickListener(v -> requireActivity().onBackPressed());
 
@@ -86,6 +84,7 @@ public class JobDetailsFragment extends Fragment {
     private void displayJobDetails() {
         if (job == null)
             return;
+        appLogger.d(TAG, "JobDetailsFragment(Seeker): displayJobDetails - jobId: " + job.getId() + ", status: " + job.getStatus());
 
         binding.tvTitle.setText(job.getTitle());
         binding.tvDescription.setText(job.getDescription());
@@ -110,11 +109,10 @@ public class JobDetailsFragment extends Fragment {
             binding.cvOtp.setVisibility(View.VISIBLE);
             binding.tvOtp.setText(job.getCompletionOtp() != null ? job.getCompletionOtp() : "----");
 
-            // TODO: Enable chat when navigation is configured
-            // if (job.getWorkerId() != null) {
-            // binding.btnChat.setVisibility(View.VISIBLE);
-            // binding.btnChat.setOnClickListener(v -> startChat());
-            // }
+            if (job.getWorkerId() != null) {
+                binding.btnChat.setVisibility(View.VISIBLE);
+                binding.btnChat.setOnClickListener(v -> startChat());
+            }
         }
 
         if (job.getStatus() == JobStatus.COMPLETED) {
@@ -123,6 +121,7 @@ public class JobDetailsFragment extends Fragment {
     }
 
     private void cancelJob() {
+        appLogger.d(TAG, "JobDetailsFragment(Seeker): [ENTER] cancelJob - jobId: " + job.getId());
         apiService.updateJobStatus(job.getId(), "CANCELLED")
                 .enqueue(new Callback<com.workly.helpseeker.data.network.ApiResponse<Job>>() {
                     @Override
@@ -144,6 +143,7 @@ public class JobDetailsFragment extends Fragment {
     }
 
     private void rescheduleJob() {
+        appLogger.d(TAG, "JobDetailsFragment(Seeker): [ENTER] rescheduleJob - jobId: " + job.getId());
         java.util.Calendar calendar = java.util.Calendar.getInstance();
         new android.app.DatePickerDialog(getContext(), (view, year, month, dayOfMonth) -> {
             new android.app.TimePickerDialog(getContext(), (tView, hourOfDay, minute) -> {
@@ -188,16 +188,13 @@ public class JobDetailsFragment extends Fragment {
                 calendar.get(java.util.Calendar.DAY_OF_MONTH)).show();
     }
 
-    // TODO: Implement chat navigation when ready
-    /*
-     * private void startChat() {
-     * Bundle bundle = new Bundle();
-     * bundle.putString("otherUserId", job.getWorkerId());
-     * Navigation.findNavController(requireView())
-     * .navigate(com.workly.helpseeker.R.id.action_jobDetails_to_chatFragment,
-     * bundle);
-     * }
-     */
+    private void startChat() {
+        appLogger.d(TAG, "Navigating to ChatFragment for worker: " + job.getWorkerId());
+        Bundle bundle = new Bundle();
+        bundle.putString("otherUserId", job.getWorkerId());
+        androidx.navigation.Navigation.findNavController(requireView())
+                .navigate(com.workly.helpseeker.R.id.action_jobDetails_to_chatFragment, bundle);
+    }
 
     private void submitReview() {
         float rating = binding.sliderRating.getValue();
@@ -214,16 +211,14 @@ public class JobDetailsFragment extends Fragment {
                     Toast.makeText(getContext(), "Review Submitted", Toast.LENGTH_SHORT).show();
                     requireActivity().onBackPressed();
                 } else {
-                    if (debugEnabled)
-                        Log.e(TAG, "Failed to submit review. Status: " + response.code());
+                    appLogger.e(TAG, "Failed to submit review. Status: " + response.code());
                     Toast.makeText(getContext(), "Failed to submit review", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<com.workly.helpseeker.data.network.ApiResponse<Void>> call, Throwable t) {
-                if (debugEnabled)
-                    Log.e(TAG, "Network error submitting review: " + t.getMessage(), t);
+                appLogger.e(TAG, "Network error submitting review: " + t.getMessage(), t);
                 Toast.makeText(getContext(), "Network Error", Toast.LENGTH_SHORT).show();
             }
         });

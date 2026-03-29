@@ -10,6 +10,11 @@ public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
 
+    @javax.inject.Inject
+    com.workly.helpseeker.util.AppLogger appLogger;
+
+    private static final String TAG = "WORKLY_DEBUG";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,10 +42,10 @@ public class MainActivity extends AppCompatActivity {
     private final androidx.activity.result.ActivityResultLauncher<String[]> requestPermissionLauncher = registerForActivityResult(
             new androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(), isGranted -> {
                 if (Boolean.TRUE.equals(isGranted.get(android.Manifest.permission.ACCESS_FINE_LOCATION))) {
-                    android.util.Log.d("WorklyPermissions", "Location permission granted");
+                    appLogger.d(TAG, "MainActivity(Seeker): Location permission granted");
                 }
                 if (Boolean.TRUE.equals(isGranted.get(android.Manifest.permission.READ_SMS))) {
-                    android.util.Log.d("WorklyPermissions", "SMS permission granted");
+                    appLogger.d(TAG, "MainActivity(Seeker): SMS permission granted");
                 }
                 // Handle other permissions if needed
             });

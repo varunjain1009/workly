@@ -37,6 +37,7 @@ public class JobService {
 
     @Transactional
     public Job createJob(Job job) {
+        log.debug("JobService: [ENTER] createJob - Transaction context initiated for job parameter.");
         if (job.getRequiredSkills() != null && !job.getRequiredSkills().isEmpty()) {
             job.setRequiredSkills(searchServiceClient.normalizeSkills(job.getRequiredSkills()));
         }
@@ -48,12 +49,12 @@ public class JobService {
             job.setStatus(JobStatus.SCHEDULED);
         }
 
-        // Generate completion OTP
+        log.debug("JobService: Binding secure completion OTP code to Job envelope.");
         job.setCompletionOtp(String.format("%04d", SECURE_RANDOM.nextInt(10000)));
 
         Job savedJob = jobRepository.save(job);
+        log.debug("JobService: Flushed Job {} entirely to Postgres.", savedJob.getId());
 
-        // Publish event to Kafka
         JobEvent event = JobEvent.builder()
                 .jobId(savedJob.getId())
                 .eventType("JOB_CREATED")
@@ -61,6 +62,7 @@ public class JobService {
                 .build();
         saveOutboxEvent(JOB_TOPIC, event);
 
+        log.debug("JobService: [EXIT] createJob - Kafka topic queued via outbox pattern.");
         return savedJob;
     }
 
@@ -128,7 +130,7 @@ public class JobService {
     }
 
     public List<Job> getSeekerJobs(String mobileNumber, String type) {
-        log.debug("Fetching seeker jobs from database for mobile: {}, type: {}", mobileNumber, type);
+        log.debug("JobService: [ENTER] getSeekerJobs - Fetching snapshot queries for mobile: {}, type: {}", mobileNumber, type);
         List<Job> jobs;
 
         if ("active".equalsIgnoreCase(type)) {
@@ -155,6 +157,8 @@ public class JobService {
             log.info("Found {} {} jobs in database for seeker mobile: {}", jobs.size(), type != null ? type : "all",
                     mobileNumber);
         }
+        
+        log.debug("JobService: [EXIT] getSeekerJobs - Successfully resolved collection sizing at {}", jobs.size());
         return jobs;
     }
 
@@ -219,6 +223,8 @@ public class JobService {
                 .workerId(requestingUserMobile)
                 .build();
         saveOutboxEvent(JOB_TOPIC, event);
+        
+        log.debug("JobService: [EXIT] completeJob - Successfully marked ID {} as completed and pushed notification event.", jobId);
         return job; // Added return statement
     }
 

@@ -42,13 +42,15 @@ public class PostJobFragment extends Fragment {
     private static final String TAG = "WORKLY_DEBUG";
     private FragmentPostJobBinding binding;
     private JobViewModel jobViewModel;
-    private boolean debugEnabled = false;
 
     @Inject
     ApiService apiService;
 
     @Inject
     Properties properties;
+
+    @Inject
+    com.workly.helpseeker.util.AppLogger appLogger;
 
     @Inject
     com.workly.helpseeker.data.config.ConfigManager configManager;
@@ -65,7 +67,6 @@ public class PostJobFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        debugEnabled = Boolean.parseBoolean(properties.getProperty("app.debug_enabled", "false"));
 
         binding.toolbar.setNavigationOnClickListener(v -> requireActivity().onBackPressed());
 
@@ -207,6 +208,7 @@ public class PostJobFragment extends Fragment {
     }
 
     private void postJob() {
+        appLogger.d(TAG, "PostJobFragment: [ENTER] postJob");
         String title = binding.etTitle.getText().toString();
         String description = binding.etDescription.getText().toString();
         String skill = binding.etSkill.getText().toString();
@@ -235,7 +237,7 @@ public class PostJobFragment extends Fragment {
                     preferredTime = scheduledDate.getTime();
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Error parsing date: " + e.getMessage());
+                appLogger.e(TAG, "PostJobFragment: Error parsing scheduled date: " + e.getMessage(), e);
             }
         }
 
@@ -243,6 +245,7 @@ public class PostJobFragment extends Fragment {
                 radius, preferredTime, type, mode);
 
         if (type == JobType.IMMEDIATE) {
+            appLogger.d(TAG, "PostJobFragment: IMMEDIATE job - navigating to WorkerDiscovery for skill: " + skill);
             // Defer posting, navigate to Worker Discovery with the Job object
             Bundle args = new Bundle();
             args.putSerializable("job", job);
@@ -253,8 +256,7 @@ public class PostJobFragment extends Fragment {
                 @Override
                 public void onResponse(Call<ApiResponse<Job>> call, Response<ApiResponse<Job>> response) {
                     if (response.isSuccessful() && response.body() != null) {
-                        if (debugEnabled)
-                            Log.d(TAG, "Job Posted Successfully. ID: " + response.body().getData().getId());
+                        appLogger.d(TAG, "Job Posted Successfully. ID: " + response.body().getData().getId());
                         Toast.makeText(getContext(), "Job Posted Successfully", Toast.LENGTH_SHORT).show();
 
                         // Add to local ViewModel for immediate UI update
@@ -263,16 +265,14 @@ public class PostJobFragment extends Fragment {
                         // For Scheduled jobs, just go back
                         requireActivity().onBackPressed();
                     } else {
-                        if (debugEnabled)
-                            Log.e(TAG, "Failed to post job. Status: " + response.code());
+                        appLogger.e(TAG, "Failed to post job. Status: " + response.code());
                         Toast.makeText(getContext(), "Failed to post job", Toast.LENGTH_SHORT).show();
                     }
                 }
 
                 @Override
                 public void onFailure(Call<ApiResponse<Job>> call, Throwable t) {
-                    if (debugEnabled)
-                        Log.e(TAG, "Network error posting job: " + t.getMessage(), t);
+                    appLogger.e(TAG, "Network error posting job: " + t.getMessage(), t);
                     Toast.makeText(getContext(), "Network Error", Toast.LENGTH_SHORT).show();
                 }
             });

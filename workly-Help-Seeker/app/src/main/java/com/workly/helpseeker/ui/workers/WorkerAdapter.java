@@ -16,16 +16,19 @@ public class WorkerAdapter extends RecyclerView.Adapter<WorkerAdapter.WorkerView
 
     private List<Worker> workers = new ArrayList<>();
     private final OnWorkerClickListener listener;
+    private final com.workly.helpseeker.util.AppLogger appLogger;
 
     public interface OnWorkerClickListener {
         void onWorkerSelected(Worker worker);
     }
 
-    public WorkerAdapter(OnWorkerClickListener listener) {
+    public WorkerAdapter(OnWorkerClickListener listener, com.workly.helpseeker.util.AppLogger appLogger) {
         this.listener = listener;
+        this.appLogger = appLogger;
     }
 
     public void setWorkers(List<Worker> workers) {
+        appLogger.d("WORKLY_DEBUG", "WorkerAdapter: Swapping worker internal array instance. Bound size: " + (workers != null ? workers.size() : 0));
         this.workers = workers;
         notifyDataSetChanged();
     }
@@ -39,7 +42,9 @@ public class WorkerAdapter extends RecyclerView.Adapter<WorkerAdapter.WorkerView
 
     @Override
     public void onBindViewHolder(@NonNull WorkerViewHolder holder, int position) {
-        holder.bind(workers.get(position), listener);
+        Worker targetWorker = workers.get(position);
+        appLogger.d("WORKLY_DEBUG", "WorkerAdapter: UI Binding viewholder index " + position + " | worker mobile: " + targetWorker.getMobileNumber());
+        holder.bind(targetWorker, listener);
     }
 
     @Override

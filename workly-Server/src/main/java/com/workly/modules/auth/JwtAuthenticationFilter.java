@@ -31,20 +31,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String mobileNumber;
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.debug("JwtAuthenticationFilter: No Bearer token on {} {}", request.getMethod(), request.getRequestURI());
             filterChain.doFilter(request, response);
             return;
         }
 
         jwt = authHeader.substring(7);
+        log.debug("JwtAuthenticationFilter: Bearer token present for {} {}", request.getMethod(), request.getRequestURI());
         try {
             mobileNumber = jwtUtils.extractMobileNumber(jwt);
+            log.debug("JwtAuthenticationFilter: Extracted mobile: {}", mobileNumber);
             if (mobileNumber != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 if (jwtUtils.validateToken(jwt, mobileNumber)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             mobileNumber, null, new ArrayList<>());
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                    log.debug("JwtAuthenticationFilter: Authentication set for mobile: {}", mobileNumber);
+                } else {
+                    log.debug("JwtAuthenticationFilter: Token validation failed for mobile: {}", mobileNumber);
                 }
+            } else {
+                log.debug("JwtAuthenticationFilter: Skipping auth - mobileNumber null or context already populated");
             }
         } catch (Exception e) {
             log.warn("JWT authentication failed: {}", e.getMessage());

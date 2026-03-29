@@ -3,6 +3,8 @@ package com.workly.helpseeker.data.network;
 import android.util.Log;
 import com.google.gson.Gson;
 import com.workly.helpseeker.data.model.ChatMessage;
+import com.workly.helpseeker.util.AppLogger;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -16,21 +18,23 @@ import java.util.concurrent.TimeUnit;
 
 @Singleton
 public class WebSocketManager {
-    private static final String TAG = "WebSocketManager";
+    private static final String TAG = "WORKLY_DEBUG";
 
     private final String wsUrl;
     private WebSocket webSocket;
     private final OkHttpClient client;
     private final Gson gson;
     private MessageListener messageListener;
+    private final AppLogger appLogger;
 
     public interface MessageListener {
         void onMessageReceived(ChatMessage message);
     }
 
     @Inject
-    public WebSocketManager(Properties properties) {
+    public WebSocketManager(Properties properties, AppLogger appLogger) {
         this.wsUrl = properties.getProperty("chat.url", "ws://10.0.2.2:8082/ws/chat");
+        this.appLogger = appLogger;
         client = new OkHttpClient.Builder()
                 .readTimeout(0, TimeUnit.MILLISECONDS)
                 .build();
@@ -39,47 +43,67 @@ public class WebSocketManager {
 
     public void connect(String userId, MessageListener listener) {
         this.messageListener = listener;
-        Request request = new Request.Builder()
-                .url(wsUrl + "?userId=" + userId)
+        appLogger.d(TAG, "WebSocketManager(Seeker): [ENTER] connect - userId present, url: " + wsUrl);
+        HttpUrl url = HttpUrl.parse(wsUrl).newBuilder()
+                .addQueryParameter("userId", userId)
                 .build();
-        webSocket = client.newWebSocket(request, new WorklyWebSocketListener());
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+        webSocket = client.newWebSocket(request, new WorklyWebSocketListener(userId));
     }
 
     public void sendMessage(ChatMessage message) {
         if (webSocket != null) {
+            appLogger.d(TAG, "WebSocketManager(Seeker): Sending message to: " + message.getReceiverId());
             String json = gson.toJson(message);
             webSocket.send(json);
+        } else {
+            appLogger.e(TAG, "WebSocketManager(Seeker): Cannot send - WebSocket is null");
         }
     }
 
     public void disconnect() {
+        appLogger.d(TAG, "WebSocketManager(Seeker): Disconnecting WebSocket");
+        messageListener = null;
         if (webSocket != null) {
             webSocket.close(1000, "User disconnected");
         }
     }
 
     private class WorklyWebSocketListener extends WebSocketListener {
+        private final String userId;
+
+        WorklyWebSocketListener(String userId) {
+            this.userId = userId;
+        }
+
         @Override
         public void onOpen(WebSocket webSocket, Response response) {
-            Log.d(TAG, "WebSocket Connected");
+            appLogger.d(TAG, "WebSocketManager(Seeker): Connection established for userId: " + userId);
         }
 
         @Override
         public void onMessage(WebSocket webSocket, String text) {
-            Log.d(TAG, "Message Received: " + text);
+            appLogger.d(TAG, "WebSocketManager(Seeker): Message received (" + text.length() + " chars)");
             try {
                 ChatMessage message = gson.fromJson(text, ChatMessage.class);
                 if (messageListener != null) {
                     messageListener.onMessageReceived(message);
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Error parsing message", e);
+                appLogger.e(TAG, "WebSocketManager(Seeker): [FAIL] Error parsing message: " + e.getMessage(), e);
             }
         }
 
         @Override
+        public void onClosing(WebSocket webSocket, int code, String reason) {
+            appLogger.d(TAG, "WebSocketManager(Seeker): Connection closing - code: " + code + ", reason: " + reason);
+        }
+
+        @Override
         public void onFailure(WebSocket webSocket, Throwable t, Response response) {
-            Log.e(TAG, "WebSocket Failure", t);
+            appLogger.e(TAG, "WebSocketManager(Seeker): [FAIL] Connection failed: " + t.getMessage(), t);
         }
     }
 }

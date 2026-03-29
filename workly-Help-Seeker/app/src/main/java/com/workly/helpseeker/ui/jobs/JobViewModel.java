@@ -25,10 +25,13 @@ public class JobViewModel extends ViewModel {
     private final MutableLiveData<Boolean> isLoading = new MutableLiveData<>(false);
     private final MutableLiveData<String> error = new MutableLiveData<>();
     private final ApiService apiService;
+    private final com.workly.helpseeker.util.AppLogger appLogger;
+    private static final String TAG = "WORKLY_DEBUG";
 
     @Inject
-    public JobViewModel(ApiService apiService) {
+    public JobViewModel(ApiService apiService, com.workly.helpseeker.util.AppLogger appLogger) {
         this.apiService = apiService;
+        this.appLogger = appLogger;
     }
 
     public LiveData<List<Job>> getJobs() {
@@ -44,6 +47,7 @@ public class JobViewModel extends ViewModel {
     }
 
     public void loadJobs(String type, boolean forceRefresh) {
+        appLogger.d(TAG, "Requesting jobs load. Type: " + type + " ForceRefresh: " + forceRefresh);
         // Separate LiveData handling could be beneficial, but for now assuming
         // Home/Past use different instances
         // OR the Fragment is responsible for observing the right data.
@@ -71,8 +75,10 @@ public class JobViewModel extends ViewModel {
             public void onResponse(Call<ApiResponse<List<Job>>> call, Response<ApiResponse<List<Job>>> response) {
                 isLoading.setValue(false);
                 if (response.isSuccessful() && response.body() != null) {
+                    appLogger.d(TAG, "Successfully loaded jobs. Count: " + response.body().getData().size());
                     jobs.setValue(response.body().getData());
                 } else {
+                    appLogger.e(TAG, "Failed to load jobs. HTTP Status: " + response.code());
                     error.setValue("Failed to load jobs: " + response.code());
                 }
             }
@@ -80,6 +86,7 @@ public class JobViewModel extends ViewModel {
             @Override
             public void onFailure(Call<ApiResponse<List<Job>>> call, Throwable t) {
                 isLoading.setValue(false);
+                appLogger.e(TAG, "Network error while loading jobs: " + t.getMessage(), t);
                 error.setValue("Network error: " + t.getMessage());
             }
         });
@@ -90,6 +97,7 @@ public class JobViewModel extends ViewModel {
     }
 
     public void addJobLocal(Job job) {
+        appLogger.d(TAG, "Locally caching and UI-prepending newly added Job: " + job.getTitle());
         List<Job> currentJobs = jobs.getValue();
         if (currentJobs == null) {
             currentJobs = new ArrayList<>();

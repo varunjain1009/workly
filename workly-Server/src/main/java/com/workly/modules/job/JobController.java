@@ -20,6 +20,7 @@ public class JobController {
     @PostMapping
     public ApiResponse<com.workly.modules.job.dto.JobDTO> createJob(
             @RequestBody com.workly.modules.job.dto.JobDTO jobDto) {
+        log.debug("JobController: [ENTER] createJob - DTO params: {}", jobDto);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String mobileNumber = auth.getName();
         log.info("Received request to create job for mobile: {}", mobileNumber);
@@ -51,17 +52,20 @@ public class JobController {
 
         Job createdJob = jobService.createJob(job);
         log.info("Job created successfully with ID: {} for mobile: {}", createdJob.getId(), mobileNumber);
+        log.debug("JobController: [EXIT] createJob - Mapping job network entity {} back to transfer DTO.", createdJob.getId());
         return ApiResponse.success(toDto(createdJob), "Job created successfully");
     }
 
     @GetMapping
     public ApiResponse<List<com.workly.modules.job.dto.JobDTO>> getJobs(
             @RequestParam(required = false) String type) {
+        log.debug("JobController: [ENTER] getJobs - Polling DB query via type constraint: {}", type);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String mobileNumber = auth.getName();
         log.info("Received request to fetch all jobs for mobile: {}", mobileNumber);
         List<Job> jobs = jobService.getSeekerJobs(mobileNumber, type);
         log.info("Fetched {} jobs for mobile: {}", jobs.size(), mobileNumber);
+        log.debug("JobController: [EXIT] getJobs - Returning List size: {}", jobs.size());
         return ApiResponse.success(jobs.stream().map(this::toDto).toList(), "Jobs retrieved");
     }
 
@@ -92,22 +96,27 @@ public class JobController {
 
     @PostMapping("/{jobId}/accept")
     public ApiResponse<Void> acceptJob(@PathVariable String jobId) {
+        log.debug("JobController: [ENTER] acceptJob - Path param ID: {}", jobId);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String mobileNumber = auth.getName();
         jobService.acceptJob(jobId, mobileNumber);
+        log.debug("JobController: [EXIT] acceptJob - Process completed, delegating successful void response null payload.");
         return ApiResponse.success(null, "Job accepted successfully");
     }
 
     @PostMapping("/{jobId}/complete")
     public ApiResponse<Void> completeJob(@PathVariable String jobId,
             @RequestBody java.util.Map<String, String> payload) {
+        log.debug("JobController: [ENTER] completeJob - ID {} requested resolution via MAP payload length: {}", jobId, payload.size());
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String mobileNumber = auth.getName();
         String otp = payload.get("otp");
         if (otp == null || otp.isBlank()) {
+            log.debug("JobController: [FAIL] completeJob - Missing OTP enforcement check tripped.");
             throw com.workly.core.WorklyException.badRequest("OTP is required");
         }
         jobService.completeJob(jobId, otp, mobileNumber);
+        log.debug("JobController: [EXIT] completeJob - Handled OTP match internally, finalizing response.");
         return ApiResponse.success(null, "Job completed successfully");
     }
 

@@ -112,5 +112,6 @@ docker-compose -f docker-compose-dev.yml up -d
 ```
 
 ## 📖 Documentation
+*   **[Product Roadmap](PRODUCT_ROADMAP.md)**: Upcoming features and critical functionality gaps.
 *   **[Architecture Guide](ARCHITECTURE.md)**: System design, diagrams, and data flow.
 *   **[API Reference](API.md)**: REST endpoints and WebSocket protocols.

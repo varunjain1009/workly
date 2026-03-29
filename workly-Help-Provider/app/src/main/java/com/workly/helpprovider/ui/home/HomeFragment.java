@@ -10,11 +10,14 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.workly.helpprovider.data.model.Job;
 import com.workly.helpprovider.databinding.FragmentHomeBinding;
 import com.workly.helpprovider.ui.adapter.JobAdapter;
+
+import javax.inject.Inject;
 
 import dagger.hilt.android.AndroidEntryPoint;
 
@@ -24,6 +27,10 @@ public class HomeFragment extends Fragment implements JobAdapter.OnJobClickListe
     private FragmentHomeBinding binding;
     private HomeViewModel viewModel;
     private JobAdapter jobAdapter;
+    private static final String TAG = "WORKLY_DEBUG";
+
+    @Inject
+    com.workly.helpprovider.util.AppLogger appLogger;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -36,6 +43,7 @@ public class HomeFragment extends Fragment implements JobAdapter.OnJobClickListe
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         viewModel = new ViewModelProvider(this).get(HomeViewModel.class);
+        appLogger.d(TAG, "HomeFragment(Provider): onViewCreated - ViewModel bound");
 
         setupRecyclerView();
         setupObservers();
@@ -52,10 +60,12 @@ public class HomeFragment extends Fragment implements JobAdapter.OnJobClickListe
         viewModel.getAvailableJobs().observe(getViewLifecycleOwner(), jobs -> {
             binding.progressBar.setVisibility(View.GONE);
             if (jobs != null && !jobs.isEmpty()) {
+                appLogger.d(TAG, "HomeFragment(Provider): Loaded " + jobs.size() + " available jobs");
                 jobAdapter.setJobs(jobs);
                 binding.tvEmpty.setVisibility(View.GONE);
                 binding.rvJobs.setVisibility(View.VISIBLE);
             } else {
+                appLogger.d(TAG, "HomeFragment(Provider): No available jobs returned");
                 binding.tvEmpty.setVisibility(View.VISIBLE);
                 binding.rvJobs.setVisibility(View.GONE);
             }
@@ -70,6 +80,7 @@ public class HomeFragment extends Fragment implements JobAdapter.OnJobClickListe
 
     private void setupListeners() {
         binding.switchAvailability.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            appLogger.d(TAG, "HomeFragment(Provider): Availability toggled to: " + isChecked);
             viewModel.setAvailability(isChecked);
             if (isChecked) {
                 binding.tvStatusLabel.setText("Status: Available");
@@ -81,10 +92,11 @@ public class HomeFragment extends Fragment implements JobAdapter.OnJobClickListe
 
     @Override
     public void onJobClick(Job job) {
+        appLogger.d(TAG, "HomeFragment(Provider): Job clicked - ID: " + job.getId() + ", title: " + job.getTitle());
         Bundle bundle = new Bundle();
         bundle.putSerializable("job", job);
-        // TODO: Fix navigation
-        // androidx.navigation.Navigation.findNavController(requireView()).navigate(com.workly.helpprovider.R.id.action_home_to_details, bundle);
+        Navigation.findNavController(requireView()).navigate(
+                com.workly.helpprovider.R.id.action_home_to_jobDetails, bundle);
     }
 
     @Override

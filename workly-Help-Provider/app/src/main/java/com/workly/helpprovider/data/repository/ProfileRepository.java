@@ -19,12 +19,15 @@ public class ProfileRepository {
     private final ProfileDao profileDao;
     private final ApiService apiService;
     private final ExecutorService executorService;
+    private final com.workly.helpprovider.util.AppLogger appLogger;
+    private static final String TAG = "WORKLY_DEBUG";
 
     @Inject
-    public ProfileRepository(ProfileDao profileDao, ApiService apiService) {
+    public ProfileRepository(ProfileDao profileDao, ApiService apiService, com.workly.helpprovider.util.AppLogger appLogger) {
         this.profileDao = profileDao;
         this.apiService = apiService;
         this.executorService = Executors.newSingleThreadExecutor();
+        this.appLogger = appLogger;
     }
 
     public LiveData<Profile> getProfile() {
@@ -33,10 +36,12 @@ public class ProfileRepository {
     }
 
     private void refreshProfile() {
+        appLogger.d(TAG, "ProfileRepository: Requesting refresh of provider profile from API...");
         apiService.getProfile().enqueue(new Callback<ApiResponse<Profile>>() {
             @Override
             public void onResponse(Call<ApiResponse<Profile>> call, Response<ApiResponse<Profile>> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                    appLogger.d(TAG, "ProfileRepository: Successfully retrieved profile from network. Updating local DB.");
                     Profile p = response.body().getData();
                     // Sync skills list back to expertise string
                     if (p.getSkills() != null && !p.getSkills().isEmpty()) {
@@ -55,12 +60,13 @@ public class ProfileRepository {
 
             @Override
             public void onFailure(Call<ApiResponse<Profile>> call, Throwable t) {
-                // Log or handle failure
+                appLogger.e(TAG, "ProfileRepository: Network error refreshing profile data: " + t.getMessage(), t);
             }
         });
     }
 
     public void updateProfile(Profile profile) {
+        appLogger.d(TAG, "ProfileRepository: Dispatching Provider Profile Update payload.");
         apiService.updateProfile(profile).enqueue(new Callback<ApiResponse<Profile>>() {
             @Override
             public void onResponse(Call<ApiResponse<Profile>> call, Response<ApiResponse<Profile>> response) {
@@ -83,12 +89,13 @@ public class ProfileRepository {
 
             @Override
             public void onFailure(Call<ApiResponse<Profile>> call, Throwable t) {
-                // Handle failure
+                appLogger.e(TAG, "ProfileRepository: Network error updating profile data: " + t.getMessage(), t);
             }
         });
     }
 
     public void updateAvailability(boolean isAvailable, Callback<ApiResponse<Void>> callback) {
+        appLogger.d(TAG, "ProfileRepository: Toggling provider availability: " + isAvailable);
         apiService.updateAvailability(isAvailable).enqueue(new Callback<ApiResponse<Void>>() {
             @Override
             public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
@@ -106,6 +113,7 @@ public class ProfileRepository {
     }
 
     public void updateDeviceToken(String token) {
+        appLogger.d(TAG, "ProfileRepository: Dispatching new Device Token to backend mapping.");
         java.util.Map<String, String> tokenMap = java.util.Collections.singletonMap("token", token);
         apiService.updateDeviceToken(tokenMap)
                 .enqueue(new Callback<com.workly.helpprovider.data.remote.ApiResponse<Void>>() {
@@ -118,7 +126,7 @@ public class ProfileRepository {
                     @Override
                     public void onFailure(Call<com.workly.helpprovider.data.remote.ApiResponse<Void>> call,
                             Throwable t) {
-                        // Fail
+                        appLogger.e(TAG, "ProfileRepository: Failed to dispatch Device Token: " + t.getMessage(), t);
                     }
                 });
     }

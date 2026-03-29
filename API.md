@@ -65,3 +65,19 @@ Base URL: `http://localhost:8084/api/v1`
 ### Rollback
 *   `POST /configs/{key}/rollback`
     *   **Params**: `version`, `scope`, `adminId`
+
+---
+
+## 5. Upcoming APIs (Roadmap)
+
+In support of the [Product Roadmap](PRODUCT_ROADMAP.md), the following endpoints are planned:
+
+### Trust & Safety (`workly-Server`)
+*   `POST /provider/kyc/upload`: Upload ID documents for automated verification.
+*   `POST /reviews/{jobId}`: Submit a dual-sided rating/review after job completion.
+*   `PUT /reviews/{reviewId}/dispute`: Flag a review or open a dispute ticket.
+
+### Payments (`workly-Payment-Service` - Future)
+*   `POST /payments/intent`: Create a secure payment intent for a job locking in escrow.
+*   `POST /payments/webhook`: Webhook endpoint for the 3rd-party payment gateway to confirm capture.
+*   `GET /provider/payouts`: View pending ledger balance and payout history.

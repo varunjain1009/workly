@@ -1,6 +1,7 @@
 package com.workly.modules.config;
 
 import com.workly.core.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,6 +11,7 @@ import java.util.Map;
 
 @RestController("serverConfigController")
 @RequestMapping("/api/v1/config")
+@Slf4j
 public class ConfigController {
 
     @Value("${custom.location.update-interval-minutes:60}")
@@ -47,7 +49,9 @@ public class ConfigController {
 
     @GetMapping("/public")
     public ApiResponse<Map<String, Object>> getPublicConfig() {
-        return ApiResponse.success(Map.of(
+        log.debug("ConfigController: [ENTER] getPublicConfig - assignmentMode: {}, jobMaxRadiusKm: {}, monetisationEnabled: {}",
+                assignmentMode, jobMaxRadiusKm, monetisationEnabled);
+        Map<String, Object> config = Map.of(
                 "locationUpdateIntervalMinutes", locationUpdateIntervalMinutes,
                 "otpResendDelaySeconds", otpResendDelaySeconds,
                 "debugEnabled", debugEnabled,
@@ -58,16 +62,20 @@ public class ConfigController {
                         "enabled", monetisationEnabled,
                         "model", monetisationModel,
                         "allowBrowseWithoutPayment", allowBrowseWithoutPayment),
-                "chatUrl", chatUrl), "Config fetched successfully");
+                "chatUrl", chatUrl);
+        log.debug("ConfigController: [EXIT] getPublicConfig - {} keys returned", config.size());
+        return ApiResponse.success(config, "Config fetched successfully");
     }
 
     @org.springframework.web.bind.annotation.PostMapping("/sync")
     public ApiResponse<Void> syncConfig(
             @org.springframework.web.bind.annotation.RequestBody Map<String, String> request) {
         String mobileNumber = request.get("mobileNumber");
+        log.debug("ConfigController: [ENTER] syncConfig - mobile: {}", mobileNumber);
         if (mobileNumber != null) {
             configSyncService.markAppAsSynced(mobileNumber);
         }
+        log.debug("ConfigController: [EXIT] syncConfig - acknowledged for mobile: {}", mobileNumber);
         return ApiResponse.success(null, "Sync acknowledged");
     }
 }

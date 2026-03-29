@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 public class FCMService {
 
     public void sendNotification(String token, String title, String body) {
+        log.debug("FCMService: [ENTER] sendNotification - token: {}, title: {}", token, title);
         if (token == null || token.isEmpty()) {
+            log.debug("FCMService: [FAIL] Empty token, aborting notification dispatch");
             log.warn("FCM Token is empty, skipping notification");
             return;
         }
@@ -23,19 +25,23 @@ public class FCMService {
                             .setTitle(title)
                             .setBody(body)
                             .build())
-                    .putData("click_action", "FLUTTER_NOTIFICATION_CLICK") // Maintain backward compat if needed
+                    .putData("click_action", "FLUTTER_NOTIFICATION_CLICK")
                     .build();
+            log.debug("FCMService: Message object constructed, attempting Firebase dispatch");
 
-            // Check if Firebase is initialized, otherwise mock
             try {
                 String response = FirebaseMessaging.getInstance().send(message);
+                log.debug("FCMService: Firebase dispatch returned response: {}", response);
                 log.info("Successfully sent message: {}", response);
             } catch (IllegalStateException e) {
+                log.debug("FCMService: Firebase not initialized, falling back to mock mode");
                 log.warn("Firebase App is not initialized. Mocking notification send: {} -> {}", title, body);
             }
 
         } catch (Exception e) {
+            log.debug("FCMService: [ERROR] Exception during FCM send: {}", e.getMessage());
             log.error("Error sending FCM notification", e);
         }
+        log.debug("FCMService: [EXIT] sendNotification");
     }
 }

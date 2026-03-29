@@ -18,6 +18,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.stream.Collectors;
 
+import javax.inject.Inject;
+
 import dagger.hilt.android.AndroidEntryPoint;
 
 @AndroidEntryPoint
@@ -26,6 +28,10 @@ public class ProfileFragment extends Fragment {
     private FragmentProfileBinding binding;
     private ProfileViewModel viewModel;
     private Profile currentProfile;
+    private static final String TAG = "WORKLY_DEBUG";
+
+    @Inject
+    com.workly.helpprovider.util.AppLogger appLogger;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -38,6 +44,7 @@ public class ProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         viewModel = new ViewModelProvider(this).get(ProfileViewModel.class);
+        appLogger.d(TAG, "ProfileFragment(Provider): onViewCreated - ViewModel initialized");
 
         setupObservers();
         setupListeners();
@@ -46,6 +53,7 @@ public class ProfileFragment extends Fragment {
     private void setupObservers() {
         viewModel.getProfile().observe(getViewLifecycleOwner(), profile -> {
             if (profile != null) {
+                appLogger.d(TAG, "ProfileFragment(Provider): Profile data received - name: " + profile.getName());
                 currentProfile = profile;
                 binding.etName.setText(profile.getName());
                 if (profile.getSkills() != null) {
@@ -55,6 +63,8 @@ public class ProfileFragment extends Fragment {
                 if (profile.getMobileNumber() != null) {
                     viewModel.fetchAverageRating(profile.getMobileNumber());
                 }
+            } else {
+                appLogger.d(TAG, "ProfileFragment(Provider): Profile data is null");
             }
         });
 
@@ -79,6 +89,7 @@ public class ProfileFragment extends Fragment {
 
     private void setupListeners() {
         binding.btnSave.setOnClickListener(v -> {
+            appLogger.d(TAG, "ProfileFragment(Provider): Save button pressed");
             if (currentProfile == null) {
                 currentProfile = new Profile();
             }

@@ -25,6 +25,7 @@ public class WorkerController {
             @RequestParam double lon,
             @RequestParam double radius) {
 
+        log.debug("WorkerController: [ENTER] searchWorkers - Searching skill: {}, lat: {}, lon: {}, radius: {}", skill, lat, lon, radius);
         log.info("Searching for workers with skill: {}, lat: {}, lon: {}, radius: {}", skill, lat, lon, radius);
 
         List<WorkerProfile> workers = matchingService.findMatches(
@@ -34,6 +35,7 @@ public class WorkerController {
                 radius);
 
         log.info("Found {} matching workers", workers.size());
+        log.debug("WorkerController: [EXIT] searchWorkers - Returning API Response encompassing {} worker matches.", workers.size());
 
         return ApiResponse.success(workers, "Workers found");
     }

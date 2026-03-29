@@ -29,16 +29,19 @@ public class AnalyticsService {
     private final WorkerProfileRepository workerRepository;
 
     public DashboardStats getDashboardStats() {
+        log.debug("AnalyticsService: [ENTER] getDashboardStats - Aggregating platform-wide metrics");
         log.info("Fetching dashboard stats");
 
         long totalSeekers = seekerRepository.count();
         long totalWorkers = workerRepository.count();
         long totalUsers = totalSeekers + totalWorkers;
+        log.debug("AnalyticsService: User counts - seekers: {}, workers: {}, total: {}", totalSeekers, totalWorkers, totalUsers);
 
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         long newSeekersToday = seekerRepository.countByCreatedAtAfter(startOfDay);
         long newWorkersToday = workerRepository.countByCreatedAtAfter(startOfDay);
         long newUsersToday = newSeekersToday + newWorkersToday;
+        log.debug("AnalyticsService: Today's signups - seekers: {}, workers: {}, total: {}", newSeekersToday, newWorkersToday, newUsersToday);
 
         long activeJobs = jobRepository.countByStatusIn(List.of(
                 JobStatus.CREATED,
@@ -48,12 +51,13 @@ public class AnalyticsService {
                 JobStatus.PENDING_ACCEPTANCE));
 
         long completedJobs = jobRepository.countByStatus(JobStatus.COMPLETED);
+        log.debug("AnalyticsService: Job metrics - active: {}, completed: {}", activeJobs, completedJobs);
 
-        // Calculate revenue from completed jobs using DB aggregation
         Double revenueCalc = jobRepository.sumBudgetByStatus(JobStatus.COMPLETED);
         double revenue = revenueCalc != null ? revenueCalc : 0.0;
+        log.debug("AnalyticsService: Revenue aggregation: {}", revenue);
 
-        return DashboardStats.builder()
+        DashboardStats stats = DashboardStats.builder()
                 .totalUsers(totalUsers)
                 .totalSeekers(totalSeekers)
                 .totalWorkers(totalWorkers)
@@ -64,6 +68,8 @@ public class AnalyticsService {
                 .userGrowth(getUserGrowth())
                 .jobStatusDistribution(getJobStatusDistribution())
                 .build();
+        log.debug("AnalyticsService: [EXIT] getDashboardStats - Stats assembled");
+        return stats;
     }
 
     private List<DataPoint> getUserGrowth() {

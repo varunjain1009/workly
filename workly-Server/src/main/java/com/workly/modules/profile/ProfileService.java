@@ -7,6 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProfileService {
@@ -16,10 +19,13 @@ public class ProfileService {
     private final SearchServiceClient searchServiceClient;
 
     public WorkerProfile createOrUpdateWorkerProfile(WorkerProfile profile) {
+        log.debug("ProfileService: [ENTER] createOrUpdateWorkerProfile - Mobile: {}", profile.getMobileNumber());
         if (profile.getSkills() != null && !profile.getSkills().isEmpty()) {
             profile.setSkills(searchServiceClient.normalizeSkills(profile.getSkills()));
         }
-        return workerRepository.save(profile);
+        WorkerProfile saved = workerRepository.save(profile);
+        log.debug("ProfileService: [EXIT] createOrUpdateWorkerProfile - Synced to persistence layer.");
+        return saved;
     }
 
     @Transactional
@@ -29,7 +35,9 @@ public class ProfileService {
 
     @Transactional
     public SkillSeekerProfile getOrCreateSeekerProfile(String mobileNumber) {
+        log.debug("ProfileService: [ENTER] getOrCreateSeekerProfile - Checking existence for mobile: {}", mobileNumber);
         return seekerRepository.findByMobileNumber(mobileNumber).orElseGet(() -> {
+            log.debug("ProfileService: Profile natively absent, injecting generic base fallback profile.");
             SkillSeekerProfile profile = new SkillSeekerProfile();
             profile.setMobileNumber(mobileNumber);
             profile.setCreatedAt(java.time.LocalDateTime.now());
@@ -73,9 +81,11 @@ public class ProfileService {
     }
 
     public void updateDeviceToken(String mobileNumber, String token) {
+        log.debug("ProfileService: [ENTER] updateDeviceToken - Synchronizing Firebase maps.");
         // Try to find worker first
         Optional<WorkerProfile> worker = getWorkerProfile(mobileNumber);
         if (worker.isPresent()) {
+            log.debug("ProfileService: Resolved Token update for standard WorkerProfile entity.");
             WorkerProfile p = worker.get();
             p.setDeviceToken(token);
             workerRepository.save(p);
@@ -85,9 +95,11 @@ public class ProfileService {
         // Else try seeker
         Optional<SkillSeekerProfile> seeker = seekerRepository.findByMobileNumber(mobileNumber);
         if (seeker.isPresent()) {
+            log.debug("ProfileService: Resolved Token update for standard SeekerProfile entity.");
             SkillSeekerProfile p = seeker.get();
             p.setDeviceToken(token);
             seekerRepository.save(p);
         }
+        log.debug("ProfileService: [EXIT] updateDeviceToken - Processing sequence finished.");
     }
 }

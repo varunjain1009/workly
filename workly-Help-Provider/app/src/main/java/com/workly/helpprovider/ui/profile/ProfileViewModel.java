@@ -12,12 +12,16 @@ import dagger.hilt.android.lifecycle.HiltViewModel;
 public class ProfileViewModel extends ViewModel {
 
     private final ProfileRepository profileRepository;
+    private final com.workly.helpprovider.util.AppLogger appLogger;
     private final MutableLiveData<String> statusMessage = new MutableLiveData<>();
     private final MutableLiveData<Boolean> isLoading = new MutableLiveData<>();
+    private static final String TAG = "WORKLY_DEBUG";
 
     @Inject
-    public ProfileViewModel(ProfileRepository profileRepository) {
+    public ProfileViewModel(ProfileRepository profileRepository, com.workly.helpprovider.util.AppLogger appLogger) {
         this.profileRepository = profileRepository;
+        this.appLogger = appLogger;
+        appLogger.d(TAG, "ProfileViewModel(Provider): Initialized");
     }
 
     public LiveData<Profile> getProfile() {
@@ -33,23 +37,21 @@ public class ProfileViewModel extends ViewModel {
     }
 
     public void updateProfile(Profile profile) {
+        appLogger.d(TAG, "ProfileViewModel(Provider): [ENTER] updateProfile - name: " + profile.getName());
         isLoading.setValue(true);
         if (profile.getExpertise() != null && !profile.getExpertise().trim().isEmpty()) {
             java.util.List<String> skillsList = java.util.Arrays.asList(profile.getExpertise().split(","));
-            // Trim each skill
             java.util.List<String> trimmedSkills = new java.util.ArrayList<>();
             for (String s : skillsList) {
                 trimmedSkills.add(s.trim());
             }
             profile.setSkills(trimmedSkills);
+            appLogger.d(TAG, "ProfileViewModel(Provider): Parsed " + trimmedSkills.size() + " skills from expertise string");
         }
         profileRepository.updateProfile(profile);
-        // Repository update is async but doesn't have a callback in current interface
-        // for success/fail
-        // assuming optimistic success for now or we could refactor repo to return
-        // LiveData state
         isLoading.setValue(false);
         statusMessage.setValue("Profile updating...");
+        appLogger.d(TAG, "ProfileViewModel(Provider): [EXIT] updateProfile dispatched");
     }
 
     private final MutableLiveData<Double> averageRating = new MutableLiveData<>();
@@ -61,12 +63,14 @@ public class ProfileViewModel extends ViewModel {
     public void fetchAverageRating(String mobileNumber) {
         if (mobileNumber == null)
             return;
+        appLogger.d(TAG, "ProfileViewModel(Provider): Fetching average rating for " + mobileNumber);
         profileRepository.getWorkerAverageRating(mobileNumber,
                 new retrofit2.Callback<com.workly.helpprovider.data.remote.ApiResponse<Double>>() {
                     @Override
                     public void onResponse(retrofit2.Call<com.workly.helpprovider.data.remote.ApiResponse<Double>> call,
                             retrofit2.Response<com.workly.helpprovider.data.remote.ApiResponse<Double>> response) {
                         if (response.isSuccessful() && response.body() != null) {
+                            appLogger.d(TAG, "ProfileViewModel(Provider): Average rating received: " + response.body().getData());
                             averageRating.setValue(response.body().getData());
                         }
                     }
@@ -74,12 +78,13 @@ public class ProfileViewModel extends ViewModel {
                     @Override
                     public void onFailure(retrofit2.Call<com.workly.helpprovider.data.remote.ApiResponse<Double>> call,
                             Throwable t) {
-                        // Ignore failure for rating
+                        appLogger.e(TAG, "ProfileViewModel(Provider): Failed to fetch rating: " + t.getMessage(), t);
                     }
                 });
     }
 
     public void updateAvailability(boolean isAvailable) {
+        appLogger.d(TAG, "ProfileViewModel(Provider): Updating availability to " + isAvailable);
         isLoading.setValue(true);
         profileRepository.updateAvailability(isAvailable,
                 new retrofit2.Callback<com.workly.helpprovider.data.remote.ApiResponse<Void>>() {
@@ -88,8 +93,10 @@ public class ProfileViewModel extends ViewModel {
                             retrofit2.Response<com.workly.helpprovider.data.remote.ApiResponse<Void>> response) {
                         isLoading.setValue(false);
                         if (response.isSuccessful()) {
+                            appLogger.d(TAG, "ProfileViewModel(Provider): Availability updated OK");
                             statusMessage.setValue("Availability updated");
                         } else {
+                            appLogger.e(TAG, "ProfileViewModel(Provider): Availability update failed. Code: " + response.code());
                             statusMessage.setValue("Failed to update availability");
                         }
                     }
@@ -98,6 +105,7 @@ public class ProfileViewModel extends ViewModel {
                     public void onFailure(retrofit2.Call<com.workly.helpprovider.data.remote.ApiResponse<Void>> call,
                             Throwable t) {
                         isLoading.setValue(false);
+                        appLogger.e(TAG, "ProfileViewModel(Provider): Availability network error: " + t.getMessage(), t);
                         statusMessage.setValue("Error updating availability");
                     }
                 });

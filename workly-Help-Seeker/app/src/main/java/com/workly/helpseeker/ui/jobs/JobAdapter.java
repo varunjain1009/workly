@@ -16,16 +16,19 @@ public class JobAdapter extends RecyclerView.Adapter<JobAdapter.JobViewHolder> {
 
     private List<Job> jobs = new ArrayList<>();
     private final OnJobClickListener listener;
+    private final com.workly.helpseeker.util.AppLogger appLogger;
 
     public interface OnJobClickListener {
         void onJobClick(Job job);
     }
 
-    public JobAdapter(OnJobClickListener listener) {
+    public JobAdapter(OnJobClickListener listener, com.workly.helpseeker.util.AppLogger appLogger) {
         this.listener = listener;
+        this.appLogger = appLogger;
     }
 
     public void setJobs(List<Job> jobs) {
+        appLogger.d("WORKLY_DEBUG", "JobAdapter: Expanding internal job tracking list. Injected size: " + (jobs != null ? jobs.size() : 0));
         this.jobs = new ArrayList<>();
         if (jobs != null) {
             for (Job job : jobs) {
@@ -44,7 +47,9 @@ public class JobAdapter extends RecyclerView.Adapter<JobAdapter.JobViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull JobViewHolder holder, int position) {
-        holder.bind(jobs.get(position), listener);
+        Job targetJob = jobs.get(position);
+        appLogger.d("WORKLY_DEBUG", "JobAdapter: UI Binding for position " + position + " | Job ID: " + targetJob.getId());
+        holder.bind(targetJob, listener);
     }
 
     @Override

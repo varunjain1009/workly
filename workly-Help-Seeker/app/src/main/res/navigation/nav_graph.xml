@@ -32,7 +32,17 @@
         android:id="@+id/jobDetailsFragment"
         android:name="com.workly.helpseeker.ui.jobs.JobDetailsFragment"
         android:label="Job Details"
-        tools:layout="@layout/fragment_job_details" />
+        tools:layout="@layout/fragment_job_details">
+        <action
+            android:id="@+id/action_jobDetails_to_chatFragment"
+            app:destination="@id/chatFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/chatFragment"
+        android:name="com.workly.helpseeker.ui.chat.ChatFragment"
+        android:label="Chat"
+        tools:layout="@layout/fragment_chat" />
 
     <fragment
         android:id="@+id/workerDiscoveryFragment"

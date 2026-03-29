@@ -47,7 +47,9 @@ public class LoginActivity extends AppCompatActivity {
     @Inject
     com.workly.helpseeker.data.config.ConfigManager configManager;
 
-    private boolean debugEnabled = false;
+    @Inject
+    com.workly.helpseeker.util.AppLogger appLogger;
+
     private CountDownTimer countDownTimer;
     private long resendDelayMs = 300000; // Default 5 mins
 
@@ -70,8 +72,7 @@ public class LoginActivity extends AppCompatActivity {
         // Let's modify ConfigManager to accept a callback or use LiveData?
         // Keeping it simple: We trigger fetch here. We use values if available.
 
-        debugEnabled = Boolean.parseBoolean(properties.getProperty("app.debug_enabled", "false"));
-        // Override with config if available? Yes, but async.
+        // Give it a moment or update UI when config is ready?
         // Let's make ConfigManager have a callback for "onFetchComplete"
 
         resendDelayMs = Long.parseLong(properties.getProperty("auth.otp.resend_delay_seconds", "300")) * 1000;
@@ -87,7 +88,7 @@ public class LoginActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                binding.btnSendOtp.setEnabled(s.length() == 10);
+                binding.btnSendOtp.setEnabled(s.length() == 10 && s.toString().matches("\\d{10}"));
             }
 
             @Override
@@ -102,7 +103,7 @@ public class LoginActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                binding.btnVerifyOtp.setEnabled(s.length() == 4);
+                binding.btnVerifyOtp.setEnabled(s.length() == 4 && s.toString().matches("\\d{4}"));
             }
 
             @Override
@@ -112,31 +113,27 @@ public class LoginActivity extends AppCompatActivity {
 
         binding.btnSendOtp.setOnClickListener(v -> {
             String phone = binding.etPhone.getText().toString();
-            if (debugEnabled)
-                Log.d(TAG, "Login Attempt - Requesting OTP for: " + phone);
-            if (phone.length() == 10) {
+            appLogger.d(TAG, "Login Attempt - Requesting OTP");
+            if (phone.matches("\\d{10}")) {
                 apiService.requestOtp(new OtpRequest(phone)).enqueue(new Callback<ApiResponse<Void>>() {
                     @Override
                     public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
                         if (response.isSuccessful()) {
-                            if (debugEnabled)
-                                Log.d(TAG, "OTP Requested Successfully for: " + phone);
+                            appLogger.d(TAG, "OTP Requested Successfully for: " + phone);
                             binding.tilOtp.setVisibility(View.VISIBLE);
                             binding.btnVerifyOtp.setVisibility(View.VISIBLE);
                             binding.btnVerifyOtp.setEnabled(binding.etOtp.getText().length() == 4);
                             startResendTimer();
                             Toast.makeText(LoginActivity.this, "OTP Sent", Toast.LENGTH_SHORT).show();
                         } else {
-                            if (debugEnabled)
-                                Log.e(TAG, "Failed to request OTP. Status: " + response.code());
+                            appLogger.e(TAG, "Failed to request OTP. Status: " + response.code());
                             Toast.makeText(LoginActivity.this, "Failed to send OTP", Toast.LENGTH_SHORT).show();
                         }
                     }
 
                     @Override
                     public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
-                        if (debugEnabled)
-                            Log.e(TAG, "Network error during Requesting OTP: " + t.getMessage(), t);
+                        appLogger.e(TAG, "Network error during Requesting OTP: " + t.getMessage(), t);
                         Toast.makeText(LoginActivity.this, "Network Error", Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -148,8 +145,7 @@ public class LoginActivity extends AppCompatActivity {
         binding.btnVerifyOtp.setOnClickListener(v -> {
             String phone = binding.etPhone.getText().toString();
             String otp = binding.etOtp.getText().toString();
-            if (debugEnabled)
-                Log.d(TAG, "Verifying OTP: " + otp + " for: " + phone);
+            appLogger.d(TAG, "Verifying OTP for: " + phone);
 
             apiService.login(new LoginRequest(phone, otp)).enqueue(new Callback<ApiResponse<AuthResponse>>() {
                 @Override
@@ -157,22 +153,19 @@ public class LoginActivity extends AppCompatActivity {
                         Response<ApiResponse<AuthResponse>> response) {
                     if (response.isSuccessful() && response.body() != null) {
                         String token = response.body().getData().getToken();
-                        if (debugEnabled)
-                            Log.d(TAG, "Login Successful! Token received.");
+                        appLogger.d(TAG, "Login Successful! Token received.");
                         authManager.saveToken(token);
                         startActivity(new Intent(LoginActivity.this, MainActivity.class));
                         finish();
                     } else {
-                        if (debugEnabled)
-                            Log.e(TAG, "Login failed. Status: " + response.code());
+                        appLogger.e(TAG, "Login failed. Status: " + response.code());
                         Toast.makeText(LoginActivity.this, "Invalid OTP", Toast.LENGTH_SHORT).show();
                     }
                 }
 
                 @Override
                 public void onFailure(Call<ApiResponse<AuthResponse>> call, Throwable t) {
-                    if (debugEnabled)
-                        Log.e(TAG, "Network error during Login: " + t.getMessage(), t);
+                    appLogger.e(TAG, "Network error during Login: " + t.getMessage(), t);
                     Toast.makeText(LoginActivity.this, "Network Error", Toast.LENGTH_SHORT).show();
                 }
             });
@@ -195,28 +188,25 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onFinish() {
                 binding.btnSendOtp.setText("RESEND OTP");
-                binding.btnSendOtp.setEnabled(binding.etPhone.getText().length() == 10);
+                binding.btnSendOtp.setEnabled(binding.etPhone.getText().toString().matches("\\d{10}"));
             }
         }.start();
     }
 
     private void performAutoLogin() {
-        if (debugEnabled)
-            Log.d(TAG, "Attempting auto-login with existing token...");
+        appLogger.d(TAG, "Attempting auto-login with existing token...");
 
         // Show progress or splash-like state if needed, here we just call the API
         apiService.refresh().enqueue(new Callback<ApiResponse<AuthResponse>>() {
             @Override
             public void onResponse(Call<ApiResponse<AuthResponse>> call, Response<ApiResponse<AuthResponse>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    if (debugEnabled)
-                        Log.d(TAG, "Auto-login successful! Token refreshed.");
+                    appLogger.d(TAG, "Auto-login successful! Token refreshed.");
                     authManager.saveToken(response.body().getData().getToken());
                     startActivity(new Intent(LoginActivity.this, MainActivity.class));
                     finish();
                 } else {
-                    if (debugEnabled)
-                        Log.w(TAG, "Auto-login failed. Token may be expired.");
+                    appLogger.w(TAG, "Auto-login failed. Token may be expired.");
                     authManager.clearToken();
                     // Stay on login screen
                 }
@@ -224,8 +214,7 @@ public class LoginActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<ApiResponse<AuthResponse>> call, Throwable t) {
-                if (debugEnabled)
-                    Log.e(TAG, "Network error during auto-login: " + t.getMessage());
+                appLogger.e(TAG, "Network error during auto-login: " + t.getMessage());
                 // In case of network error, we might want to let user retry manually or stay on
                 // login
             }

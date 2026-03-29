@@ -3,6 +3,7 @@ package com.workly.modules.analytics;
 import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,13 +15,18 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/analytics")
 @RequiredArgsConstructor
+@Slf4j
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
 
     @GetMapping("/dashboard")
     public ResponseEntity<DashboardStats> getDashboardStats() {
-        return ResponseEntity.ok(analyticsService.getDashboardStats());
+        log.debug("AnalyticsController: [ENTER] getDashboardStats");
+        DashboardStats stats = analyticsService.getDashboardStats();
+        log.debug("AnalyticsController: [EXIT] getDashboardStats - totalUsers: {}, activeJobs: {}, completedJobs: {}",
+                stats.getTotalUsers(), stats.getActiveJobs(), stats.getCompletedJobs());
+        return ResponseEntity.ok(stats);
     }
 
     @Data

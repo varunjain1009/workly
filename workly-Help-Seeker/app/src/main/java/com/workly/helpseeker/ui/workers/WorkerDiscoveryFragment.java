@@ -34,13 +34,12 @@ public class WorkerDiscoveryFragment extends Fragment {
     private static final String TAG = "WORKLY_DEBUG";
     private FragmentWorkerDiscoveryBinding binding;
     private WorkerAdapter adapter;
-    private boolean debugEnabled = false;
 
     @Inject
     ApiService apiService;
 
     @Inject
-    Properties properties;
+    com.workly.helpseeker.util.AppLogger appLogger;
 
     @Nullable
     @Override
@@ -55,7 +54,6 @@ public class WorkerDiscoveryFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        debugEnabled = Boolean.parseBoolean(properties.getProperty("app.debug_enabled", "false"));
 
         binding.toolbar.setNavigationOnClickListener(v -> requireActivity().onBackPressed());
 
@@ -65,8 +63,7 @@ public class WorkerDiscoveryFragment extends Fragment {
             if (getArguments().containsKey("job")) {
                 pendingJob = (com.workly.helpseeker.data.model.Job) getArguments().getSerializable("job");
                 if (pendingJob != null) {
-                    if (debugEnabled)
-                        Log.d(TAG, "Loaded Pending Job: " + pendingJob.getTitle());
+                    appLogger.d(TAG, "Loaded Pending Job: " + pendingJob.getTitle());
                     searchWorkers(pendingJob.getRequiredSkill(), pendingJob.getSearchRadiusKm());
                 }
             } else {
@@ -74,8 +71,7 @@ public class WorkerDiscoveryFragment extends Fragment {
                 String skill = getArguments().getString("skill");
                 int radius = getArguments().getInt("radius", 10);
                 if (skill != null) {
-                    if (debugEnabled)
-                        Log.d(TAG, "Searching for: " + skill + " within " + radius + "km");
+                    appLogger.d(TAG, "Searching for: " + skill + " within " + radius + "km");
                     searchWorkers(skill, radius);
                 } else {
                     loadDummyWorkers();
@@ -94,8 +90,7 @@ public class WorkerDiscoveryFragment extends Fragment {
             public void onResponse(Call<ApiResponse<List<Worker>>> call, Response<ApiResponse<List<Worker>>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<Worker> workers = response.body().getData();
-                    if (debugEnabled)
-                        Log.d(TAG, "Found " + (workers != null ? workers.size() : 0) + " workers");
+                    appLogger.d(TAG, "Found " + (workers != null ? workers.size() : 0) + " workers");
 
                     if (workers == null || workers.isEmpty()) {
                         // No workers found
@@ -113,8 +108,7 @@ public class WorkerDiscoveryFragment extends Fragment {
                         adapter.setWorkers(workers);
                     }
                 } else {
-                    if (debugEnabled)
-                        Log.e(TAG, "Search failed. Status: " + response.code());
+                    appLogger.e(TAG, "Search failed. Status: " + response.code());
                     Toast.makeText(getContext(), "Failed to find workers", Toast.LENGTH_SHORT).show();
                     // Optional: Show empty state on error too?
                 }
@@ -122,8 +116,7 @@ public class WorkerDiscoveryFragment extends Fragment {
 
             @Override
             public void onFailure(Call<ApiResponse<List<Worker>>> call, Throwable t) {
-                if (debugEnabled)
-                    Log.e(TAG, "Network error during search: " + t.getMessage(), t);
+                appLogger.e(TAG, "Network error during search: " + t.getMessage(), t);
                 Toast.makeText(getContext(), "Network error", Toast.LENGTH_SHORT).show();
             }
         });
@@ -136,7 +129,7 @@ public class WorkerDiscoveryFragment extends Fragment {
             } else {
                 Toast.makeText(getContext(), "Selected: " + worker.getName(), Toast.LENGTH_SHORT).show();
             }
-        });
+        }, appLogger);
         binding.rvWorkers.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.rvWorkers.setAdapter(adapter);
 
@@ -163,6 +156,7 @@ public class WorkerDiscoveryFragment extends Fragment {
     }
 
     private void confirmAndPostJob(Worker worker) {
+        appLogger.d(TAG, "WorkerDiscoveryFragment: [ENTER] confirmAndPostJob - workerId: " + worker.getId() + ", jobTitle: " + pendingJob.getTitle());
         pendingJob.setWorkerId(worker.getId());
         pendingJob.setAssignmentMode(com.workly.helpseeker.data.model.AssignmentMode.MANUAL_SELECT);
 

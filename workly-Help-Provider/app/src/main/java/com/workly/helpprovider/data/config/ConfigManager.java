@@ -10,15 +10,19 @@ import retrofit2.Response;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import com.workly.helpprovider.util.AppLogger;
+
 @Singleton
 public class ConfigManager {
     private static final String TAG = "ConfigManager";
     private final ApiService apiService;
     private ConfigResponse cachedConfig;
+    private final AppLogger appLogger;
 
     @Inject
-    public ConfigManager(ApiService apiService) {
+    public ConfigManager(ApiService apiService, AppLogger appLogger) {
         this.apiService = apiService;
+        this.appLogger = appLogger;
     }
 
     public void fetchConfig() {
@@ -27,19 +31,19 @@ public class ConfigManager {
             public void onResponse(Call<ApiResponse<ConfigResponse>> call, Response<ApiResponse<ConfigResponse>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     cachedConfig = response.body().getData();
-                    Log.d(TAG, "Config fetched successfully");
+                    appLogger.d(TAG, "Config fetched successfully");
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<ConfigResponse>> call, Throwable t) {
-                Log.e(TAG, "Failed to fetch config", t);
+                appLogger.e(TAG, "Failed to fetch config", t);
             }
         });
     }
 
     public void syncConfig() {
-        android.util.Log.d(TAG, "Syncing config from server...");
+        appLogger.d(TAG, "Syncing config from server...");
         fetchConfig();
     }
 
