@@ -42,12 +42,17 @@ public class PaymentService {
         tx.setSeekerMobileNumber(seekerMobile);
         tx.setWorkerMobileNumber(job.getWorkerMobileNumber());
 
-        double gross = job.getBudget();
-        double commission = gross * 0.10; // 10% commission
+        double originalBudget = job.getBudget();
+        double discount = job.getDiscountAmount();
+        double seekerPayable = Math.max(0, originalBudget - discount);
+        
+        // Platform absorbs the discount, so provider gets commission off the original budget
+        double commission = originalBudget * 0.10; // 10% commission
 
-        tx.setGrossAmount(gross);
+        tx.setGrossAmount(seekerPayable);
+        tx.setDiscountAmount(discount);
         tx.setCommissionAmount(commission);
-        tx.setNetProviderAmount(gross - commission);
+        tx.setNetProviderAmount(originalBudget - commission);
         tx.setStatus(PaymentTransaction.TransactionStatus.ESCROW_LOCKED);
         tx.setPaymentIntentId("pi_" + UUID.randomUUID().toString()); // Mock Stripe ID
 

@@ -33,6 +33,16 @@ public class ReviewEventConsumer {
                 profileService.getWorkerProfile(workerMobileNumber).ifPresent(p -> {
                     p.setAverageRating(avg);
                     p.setTotalReviews(total);
+                    
+                    if (total >= 20 && avg >= 4.8) {
+                        p.setTier(com.workly.modules.profile.WorkerProfile.ProviderTier.SUPER_PRO);
+                        log.info("Worker {} upgraded to SUPER_PRO tier!", workerMobileNumber);
+                    } else if (total >= 10 && avg >= 4.5) {
+                        p.setTier(com.workly.modules.profile.WorkerProfile.ProviderTier.PREMIUM);
+                    } else {
+                        p.setTier(com.workly.modules.profile.WorkerProfile.ProviderTier.STANDARD);
+                    }
+                    
                     profileService.createOrUpdateWorkerProfile(p);
                     log.info("Updated worker {} with new average: {}", workerMobileNumber, avg);
                 });

@@ -36,6 +36,15 @@ public class WorkerProfile extends MongoBaseEntity {
     // KYC and Trust
     private boolean kycVerified;
     private String idDocumentUrl;
+    
+    // Tier Badges
+    private ProviderTier tier = ProviderTier.STANDARD;
+
+    public enum ProviderTier {
+        STANDARD,
+        PREMIUM,
+        SUPER_PRO
+    }
 
     @Data
     public static class UnavailableSlot {

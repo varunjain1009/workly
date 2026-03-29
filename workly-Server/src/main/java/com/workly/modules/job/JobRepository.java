@@ -24,4 +24,6 @@ public interface JobRepository extends MongoRepository<Job, String> {
             "{ $group: { _id: null, total: { $sum: '$budget' } } }"
     })
     Double sumBudgetByStatus(JobStatus status);
+
+    long countByLocationNearAndStatusIn(org.springframework.data.geo.Point location, org.springframework.data.geo.Distance distance, List<JobStatus> statuses);
 }

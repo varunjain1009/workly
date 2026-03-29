@@ -99,3 +99,14 @@ Base URL: `http://localhost:8080/api/v1`
 
 ### Ledger
 *   `GET /payments/provider/ledger`: View pending ledger balance and mock payout history for authenticated Worker.
+
+---
+
+## 8. Growth & Pricing APIs
+Base URL: `http://localhost:8080/api/v1`
+
+### Surge Estimator
+*   `GET /pricing/estimate?lat={lat}&lon={lon}&baseRate={baseRate}`: Returns algorithmic surge multiplier based on active job density within a 5km radius.
+
+### Promo Validation
+*   `GET /promotions/validate?code={code}&amount={amount}`: Validates string promo codes against active campaigns returning exact mathematical discount markdown safely.

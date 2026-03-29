@@ -25,6 +25,12 @@ public class MatchingService {
         } else {
             results = workerRepository.findMatchingWorkers(requiredSkills, longitude, latitude, maxDistanceMeters);
         }
+        
+        // Sort by ProviderTier (SUPER_PRO > PREMIUM > STANDARD)
+        results.sort(java.util.Comparator.comparing((WorkerProfile p) -> {
+            if (p.getTier() == null) return 0;
+            return p.getTier().ordinal();
+        }).reversed());
         log.debug("MatchingService: [EXIT] findMatches - Found {} matching workers within {}m radius", results.size(), maxDistanceMeters);
         return results;
     }

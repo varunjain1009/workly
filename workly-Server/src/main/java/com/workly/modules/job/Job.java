@@ -41,4 +41,8 @@ public class Job extends MongoBaseEntity {
     // Cancellation policy fields
     private Double penaltyAmount;
     private String cancellationReason;
+    
+    // Growth and Retention (Promotions)
+    private String appliedPromoCode;
+    private double discountAmount;
 }

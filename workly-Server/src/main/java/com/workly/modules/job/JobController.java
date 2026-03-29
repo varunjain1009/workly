@@ -17,6 +17,7 @@ public class JobController {
 
     private final JobService jobService;
     private final com.workly.modules.profile.ProfileService profileService;
+    private final com.workly.modules.promotion.PromotionService promotionService;
 
     @PostMapping
     public ApiResponse<com.workly.modules.job.dto.JobDTO> createJob(
@@ -50,6 +51,13 @@ public class JobController {
             job.setLocation(new double[] { jobDto.getLocation().getLongitude(), jobDto.getLocation().getLatitude() });
         }
         job.setSearchRadiusKm(jobDto.getSearchRadiusKm());
+
+        if (jobDto.getAppliedPromoCode() != null && !jobDto.getAppliedPromoCode().isEmpty() && job.getBudget() > 0) {
+            com.workly.modules.promotion.PromotionValidationResult promoResult = promotionService.validatePromotion(jobDto.getAppliedPromoCode(), job.getBudget());
+            job.setAppliedPromoCode(promoResult.getCode());
+            job.setDiscountAmount(promoResult.getDiscountAmount());
+            log.info("JobController: Applied promo code {} saving {} to budget", promoResult.getCode(), promoResult.getDiscountAmount());
+        }
 
         Job createdJob = jobService.createJob(job);
         log.info("Job created successfully with ID: {} for mobile: {}", createdJob.getId(), mobileNumber);
@@ -189,6 +197,8 @@ public class JobController {
         }
         dto.setPenaltyAmount(job.getPenaltyAmount());
         dto.setCancellationReason(job.getCancellationReason());
+        dto.setAppliedPromoCode(job.getAppliedPromoCode());
+        dto.setDiscountAmount(job.getDiscountAmount());
 
         com.workly.modules.job.dto.LocationDTO locationDto = new com.workly.modules.job.dto.LocationDTO();
         locationDto.setAddress(job.getAddress());

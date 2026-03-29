@@ -17,6 +17,7 @@ public class PaymentTransaction extends MongoBaseEntity {
     private String workerMobileNumber;
     
     private double grossAmount;
+    private double discountAmount;
     private double commissionAmount; // E.g., 10%
     private double netProviderAmount;
     
