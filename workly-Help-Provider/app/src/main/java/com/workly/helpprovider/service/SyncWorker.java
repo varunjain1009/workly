@@ -17,7 +17,9 @@ public class SyncWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
-        AuthManager authManager = new AuthManager(getApplicationContext(), new com.workly.helpprovider.util.AppLogger());
+        java.util.Properties props = new java.util.Properties();
+        props.setProperty("app.debug_enabled", "true");
+        AuthManager authManager = new AuthManager(getApplicationContext(), new com.workly.helpprovider.util.AppLogger(props));
         if (!authManager.isLoggedIn())
             return Result.failure();
 
