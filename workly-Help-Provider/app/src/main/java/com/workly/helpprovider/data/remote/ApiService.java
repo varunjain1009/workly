@@ -51,4 +51,7 @@ public interface ApiService {
 
     @GET("config/public")
     Call<ApiResponse<com.workly.helpprovider.data.model.ConfigResponse>> getPublicConfig();
+
+    @POST("reviews")
+    Call<ApiResponse<Void>> submitReview(@Body com.workly.helpprovider.data.remote.ReviewRequest request);
 }

@@ -1,13 +1,20 @@
 package com.workly.helpseeker.data.model;
 
+import com.google.gson.annotations.SerializedName;
+
 public class Worker {
     private String id;
     private String name;
     private double skillMatch;
     private double distanceKm;
     private String availabilityStatus;
+    
+    @SerializedName("averageRating")
     private float rating;
+    
+    @SerializedName("totalReviews")
     private int reviewCount;
+    
     private double estimatedCharges;
     private int travelRadius;
     private String profileImageUrl;
