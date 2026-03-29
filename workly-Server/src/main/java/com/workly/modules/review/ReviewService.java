@@ -64,6 +64,25 @@ public class ReviewService {
         return saved;
     }
 
+    public Review disputeReview(String reviewId, String reason, String mobileNumber) {
+        log.debug("ReviewService: [ENTER] disputeReview - reviewId: {}, mobile: {}", reviewId, mobileNumber);
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> WorklyException.notFound("Review not found"));
+
+        if (review.getReviewerRole() == Review.ReviewerRole.SEEKER && !review.getWorkerMobileNumber().equals(mobileNumber)) {
+            throw WorklyException.forbidden("You can only dispute reviews left for you");
+        }
+        if (review.getReviewerRole() == Review.ReviewerRole.WORKER && !review.getSeekerMobileNumber().equals(mobileNumber)) {
+            throw WorklyException.forbidden("You can only dispute reviews left for you");
+        }
+
+        review.setDisputed(true);
+        review.setDisputeReason(reason);
+        Review saved = reviewRepository.save(review);
+        log.info("ReviewService: Review {} disputed by {}", reviewId, mobileNumber);
+        return saved;
+    }
+
     public List<Review> getWorkerReviews(String mobileNumber) {
         log.debug("ReviewService: [ENTER] getWorkerReviews - mobile: {}", mobileNumber);
         // Reviews about worker are written by seeker

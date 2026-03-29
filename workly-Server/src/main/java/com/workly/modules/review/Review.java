@@ -18,6 +18,10 @@ public class Review extends MongoBaseEntity {
     private int rating; // 1-5
     private String comment;
     private ReviewerRole reviewerRole;
+    
+    // Trust and Safety
+    private boolean disputed;
+    private String disputeReason;
 
     public enum ReviewerRole {
         SEEKER, // Seeker left a review for the Worker

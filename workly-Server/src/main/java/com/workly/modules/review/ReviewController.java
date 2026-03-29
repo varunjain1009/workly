@@ -62,4 +62,14 @@ public class ReviewController {
         }
         return dto;
     }
+
+    @PutMapping("/{reviewId}/dispute")
+    public ApiResponse<ReviewDTO> disputeReview(@PathVariable String reviewId, @RequestBody java.util.Map<String, String> payload) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String mobileNumber = auth.getName();
+        String reason = payload.getOrDefault("reason", "No reason provided");
+        log.debug("ReviewController: [ENTER] disputeReview - reviewId: {}, reason: {}", reviewId, reason);
+        Review review = reviewService.disputeReview(reviewId, reason, mobileNumber);
+        return ApiResponse.success(toDto(review), "Review successfully disputed");
+    }
 }

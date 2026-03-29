@@ -12,7 +12,9 @@ Base URL: `http://localhost:8080/api/v1`
 *   `POST /jobs`: Create a new job.
 *   `GET /jobs`: List jobs (User/Worker context).
 *   `GET /jobs/{id}`: Get job details.
-*   `PUT /jobs/{id}/status`: Update job status (e.g., STARTED, COMPLETED).
+*   `GET /jobs/{id}/tracking`: Fetch live LocationETA of ASSIGNED provider.
+*   `PUT /jobs/{id}`: Reschedule a job (subject to 2-hour penalty matrix).
+*   `PATCH /jobs/{id}/status`: Update job status (e.g., STARTED, CANCELLED, COMPLETED).
 
 ### User
 *   `POST /users/fcm-token`: Register FCM token for push notifications.
@@ -68,16 +70,32 @@ Base URL: `http://localhost:8084/api/v1`
 
 ---
 
-## 5. Upcoming APIs (Roadmap)
+## 5. Live Tracking WebSocket
+URL: `ws://localhost:8080/ws/tracking?jobId={jobId}&role={PROVIDER|SEEKER}`
 
-In support of the [Product Roadmap](PRODUCT_ROADMAP.md), the following endpoints are planned:
+### Message Relaying
+*   Providers stream raw coordinates.
+*   Seekers listen and render Map UI real-time.
 
-### Trust & Safety (`workly-Server`)
-*   `POST /provider/kyc/upload`: Upload ID documents for automated verification.
-*   `POST /reviews/{jobId}`: Submit a dual-sided rating/review after job completion.
-*   `PUT /reviews/{reviewId}/dispute`: Flag a review or open a dispute ticket.
+---
 
-### Payments (`workly-Payment-Service` - Future)
-*   `POST /payments/intent`: Create a secure payment intent for a job locking in escrow.
-*   `POST /payments/webhook`: Webhook endpoint for the 3rd-party payment gateway to confirm capture.
-*   `GET /provider/payouts`: View pending ledger balance and payout history.
+## 6. Trust & Safety APIs
+Base URL: `http://localhost:8080/api/v1`
+
+### KYC Verification
+*   `POST /workers/kyc/upload`: Upload ID documents for automated verification (multipart form).
+
+### Reporting & Disputes
+*   `PUT /reviews/{reviewId}/dispute`: Flag a review and open a dispute ticket.
+
+---
+
+## 7. Mock Payment Ledger API
+Base URL: `http://localhost:8080/api/v1`
+
+### Escrow
+*   `POST /payments/intent/{jobId}`: Create a secure payment intent for a job locking funds in escrow (`ESCROW_LOCKED`).
+*   Automatically transitions to `COMPLETED` asynchronously on `JOB_COMPLETED` Kafka pulse.
+
+### Ledger
+*   `GET /payments/provider/ledger`: View pending ledger balance and mock payout history for authenticated Worker.

@@ -32,6 +32,10 @@ public class WorkerProfile extends MongoBaseEntity {
     private String deviceToken;
 
     private List<UnavailableSlot> unavailableSlots;
+    
+    // KYC and Trust
+    private boolean kycVerified;
+    private String idDocumentUrl;
 
     @Data
     public static class UnavailableSlot {
