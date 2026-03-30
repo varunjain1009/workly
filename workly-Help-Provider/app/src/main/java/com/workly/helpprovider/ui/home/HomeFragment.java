@@ -4,14 +4,14 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
+
+import com.google.android.material.snackbar.Snackbar;
 
 import com.workly.helpprovider.data.model.Job;
 import com.workly.helpprovider.databinding.FragmentHomeBinding;
@@ -48,6 +48,8 @@ public class HomeFragment extends Fragment implements JobAdapter.OnJobClickListe
         setupRecyclerView();
         setupObservers();
         setupListeners();
+
+        binding.swipeRefresh.setOnRefreshListener(() -> viewModel.refreshJobs());
     }
 
     private void setupRecyclerView() {
@@ -59,13 +61,15 @@ public class HomeFragment extends Fragment implements JobAdapter.OnJobClickListe
     private void setupObservers() {
         viewModel.getAvailableJobs().observe(getViewLifecycleOwner(), jobs -> {
             binding.progressBar.setVisibility(View.GONE);
+            binding.swipeRefresh.setRefreshing(false);
             if (jobs != null && !jobs.isEmpty()) {
                 appLogger.d(TAG, "HomeFragment(Provider): Loaded " + jobs.size() + " available jobs");
-                jobAdapter.setJobs(jobs);
+                jobAdapter.submitList(jobs);
                 binding.tvEmpty.setVisibility(View.GONE);
                 binding.rvJobs.setVisibility(View.VISIBLE);
             } else {
                 appLogger.d(TAG, "HomeFragment(Provider): No available jobs returned");
+                jobAdapter.submitList(null);
                 binding.tvEmpty.setVisibility(View.VISIBLE);
                 binding.rvJobs.setVisibility(View.GONE);
             }
@@ -73,7 +77,7 @@ public class HomeFragment extends Fragment implements JobAdapter.OnJobClickListe
 
         viewModel.getAvailabilityUpdated().observe(getViewLifecycleOwner(), updated -> {
             if (updated) {
-                Toast.makeText(getContext(), "Availability updated", Toast.LENGTH_SHORT).show();
+                Snackbar.make(binding.getRoot(), "Availability updated", Snackbar.LENGTH_SHORT).show();
             }
         });
     }

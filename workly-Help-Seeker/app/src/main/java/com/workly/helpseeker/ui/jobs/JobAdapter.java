@@ -4,17 +4,15 @@ import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.workly.helpseeker.data.model.Job;
 import com.workly.helpseeker.databinding.ItemJobBinding;
 
-import java.util.ArrayList;
-import java.util.List;
+public class JobAdapter extends ListAdapter<Job, JobAdapter.JobViewHolder> {
 
-public class JobAdapter extends RecyclerView.Adapter<JobAdapter.JobViewHolder> {
-
-    private List<Job> jobs = new ArrayList<>();
     private final OnJobClickListener listener;
     private final com.workly.helpseeker.util.AppLogger appLogger;
 
@@ -22,20 +20,24 @@ public class JobAdapter extends RecyclerView.Adapter<JobAdapter.JobViewHolder> {
         void onJobClick(Job job);
     }
 
+    private static final DiffUtil.ItemCallback<Job> DIFF_CALLBACK = new DiffUtil.ItemCallback<Job>() {
+        @Override
+        public boolean areItemsTheSame(@NonNull Job oldItem, @NonNull Job newItem) {
+            return oldItem.getId() != null && oldItem.getId().equals(newItem.getId());
+        }
+
+        @Override
+        public boolean areContentsTheSame(@NonNull Job oldItem, @NonNull Job newItem) {
+            return oldItem.getId() != null && oldItem.getId().equals(newItem.getId())
+                    && oldItem.getStatus() == newItem.getStatus()
+                    && oldItem.getPreferredDateTime() == newItem.getPreferredDateTime();
+        }
+    };
+
     public JobAdapter(OnJobClickListener listener, com.workly.helpseeker.util.AppLogger appLogger) {
+        super(DIFF_CALLBACK);
         this.listener = listener;
         this.appLogger = appLogger;
-    }
-
-    public void setJobs(List<Job> jobs) {
-        appLogger.d("WORKLY_DEBUG", "JobAdapter: Expanding internal job tracking list. Injected size: " + (jobs != null ? jobs.size() : 0));
-        this.jobs = new ArrayList<>();
-        if (jobs != null) {
-            for (Job job : jobs) {
-                this.jobs.add(job);
-            }
-        }
-        notifyDataSetChanged();
     }
 
     @NonNull
@@ -47,14 +49,9 @@ public class JobAdapter extends RecyclerView.Adapter<JobAdapter.JobViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull JobViewHolder holder, int position) {
-        Job targetJob = jobs.get(position);
+        Job targetJob = getItem(position);
         appLogger.d("WORKLY_DEBUG", "JobAdapter: UI Binding for position " + position + " | Job ID: " + targetJob.getId());
         holder.bind(targetJob, listener);
-    }
-
-    @Override
-    public int getItemCount() {
-        return jobs.size();
     }
 
     static class JobViewHolder extends RecyclerView.ViewHolder {

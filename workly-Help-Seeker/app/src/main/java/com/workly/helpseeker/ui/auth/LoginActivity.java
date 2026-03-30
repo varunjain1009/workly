@@ -7,9 +7,9 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
-import android.widget.Toast;
-
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.material.snackbar.Snackbar;
 
 import com.workly.helpseeker.MainActivity;
 import com.workly.helpseeker.data.auth.AuthManager;
@@ -124,17 +124,17 @@ public class LoginActivity extends AppCompatActivity {
                             binding.btnVerifyOtp.setVisibility(View.VISIBLE);
                             binding.btnVerifyOtp.setEnabled(binding.etOtp.getText().length() == 4);
                             startResendTimer();
-                            Toast.makeText(LoginActivity.this, "OTP Sent", Toast.LENGTH_SHORT).show();
+                            Snackbar.make(binding.getRoot(), "OTP Sent", Snackbar.LENGTH_SHORT).show();
                         } else {
                             appLogger.e(TAG, "Failed to request OTP. Status: " + response.code());
-                            Toast.makeText(LoginActivity.this, "Failed to send OTP", Toast.LENGTH_SHORT).show();
+                            Snackbar.make(binding.getRoot(), "Failed to send OTP", Snackbar.LENGTH_LONG).show();
                         }
                     }
 
                     @Override
                     public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
                         appLogger.e(TAG, "Network error during Requesting OTP: " + t.getMessage(), t);
-                        Toast.makeText(LoginActivity.this, "Network Error", Toast.LENGTH_SHORT).show();
+                        Snackbar.make(binding.getRoot(), "Network Error", Snackbar.LENGTH_LONG).show();
                     }
                 });
             } else {
@@ -159,14 +159,14 @@ public class LoginActivity extends AppCompatActivity {
                         finish();
                     } else {
                         appLogger.e(TAG, "Login failed. Status: " + response.code());
-                        Toast.makeText(LoginActivity.this, "Invalid OTP", Toast.LENGTH_SHORT).show();
+                        Snackbar.make(binding.getRoot(), "Invalid OTP", Snackbar.LENGTH_LONG).show();
                     }
                 }
 
                 @Override
                 public void onFailure(Call<ApiResponse<AuthResponse>> call, Throwable t) {
                     appLogger.e(TAG, "Network error during Login: " + t.getMessage(), t);
-                    Toast.makeText(LoginActivity.this, "Network Error", Toast.LENGTH_SHORT).show();
+                    Snackbar.make(binding.getRoot(), "Network Error", Snackbar.LENGTH_LONG).show();
                 }
             });
         });

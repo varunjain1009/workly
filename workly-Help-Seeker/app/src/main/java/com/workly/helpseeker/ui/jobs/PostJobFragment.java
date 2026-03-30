@@ -9,13 +9,13 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
+
+import com.google.android.material.snackbar.Snackbar;
 
 import com.workly.helpseeker.R;
 import com.workly.helpseeker.data.model.AssignmentMode;
@@ -257,7 +257,7 @@ public class PostJobFragment extends Fragment {
                 public void onResponse(Call<ApiResponse<Job>> call, Response<ApiResponse<Job>> response) {
                     if (response.isSuccessful() && response.body() != null) {
                         appLogger.d(TAG, "Job Posted Successfully. ID: " + response.body().getData().getId());
-                        Toast.makeText(getContext(), "Job Posted Successfully", Toast.LENGTH_SHORT).show();
+                        Snackbar.make(binding.getRoot(), "Job Posted Successfully", Snackbar.LENGTH_SHORT).show();
 
                         // Add to local ViewModel for immediate UI update
                         jobViewModel.addJobLocal(response.body().getData());
@@ -266,14 +266,14 @@ public class PostJobFragment extends Fragment {
                         requireActivity().onBackPressed();
                     } else {
                         appLogger.e(TAG, "Failed to post job. Status: " + response.code());
-                        Toast.makeText(getContext(), "Failed to post job", Toast.LENGTH_SHORT).show();
+                        Snackbar.make(binding.getRoot(), "Failed to post job", Snackbar.LENGTH_LONG).show();
                     }
                 }
 
                 @Override
                 public void onFailure(Call<ApiResponse<Job>> call, Throwable t) {
                     appLogger.e(TAG, "Network error posting job: " + t.getMessage(), t);
-                    Toast.makeText(getContext(), "Network Error", Toast.LENGTH_SHORT).show();
+                    Snackbar.make(binding.getRoot(), "Network Error", Snackbar.LENGTH_LONG).show();
                 }
             });
         }

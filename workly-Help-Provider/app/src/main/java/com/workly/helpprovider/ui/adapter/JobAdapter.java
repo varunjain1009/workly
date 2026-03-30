@@ -4,6 +4,8 @@ import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.workly.helpprovider.data.model.Job;
@@ -11,35 +13,34 @@ import com.workly.helpprovider.data.model.JobStatus;
 import com.workly.helpprovider.databinding.ItemJobBinding;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 
-public class JobAdapter extends RecyclerView.Adapter<JobAdapter.JobViewHolder> {
+public class JobAdapter extends ListAdapter<Job, JobAdapter.JobViewHolder> {
 
-    private List<Job> jobs = new ArrayList<>();
     private final OnJobClickListener listener;
 
     public interface OnJobClickListener {
         void onJobClick(Job job);
     }
 
-    public JobAdapter(OnJobClickListener listener) {
-        this.listener = listener;
-    }
-
-    public void setJobs(List<Job> jobs) {
-        this.jobs = new ArrayList<>();
-        if (jobs != null) {
-            for (Job job : jobs) {
-                // Filter logic can be added here if needed, e.g. hide cancelled
-                if (job.getStatus() != JobStatus.CANCELLED) {
-                    this.jobs.add(job);
-                }
-            }
+    private static final DiffUtil.ItemCallback<Job> DIFF_CALLBACK = new DiffUtil.ItemCallback<Job>() {
+        @Override
+        public boolean areItemsTheSame(@NonNull Job oldItem, @NonNull Job newItem) {
+            return oldItem.getId() != null && oldItem.getId().equals(newItem.getId());
         }
-        notifyDataSetChanged();
+
+        @Override
+        public boolean areContentsTheSame(@NonNull Job oldItem, @NonNull Job newItem) {
+            return oldItem.getId() != null && oldItem.getId().equals(newItem.getId())
+                    && oldItem.getStatus() == newItem.getStatus()
+                    && oldItem.getPreferredDateTime() == newItem.getPreferredDateTime();
+        }
+    };
+
+    public JobAdapter(OnJobClickListener listener) {
+        super(DIFF_CALLBACK);
+        this.listener = listener;
     }
 
     @NonNull
@@ -51,12 +52,7 @@ public class JobAdapter extends RecyclerView.Adapter<JobAdapter.JobViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull JobViewHolder holder, int position) {
-        holder.bind(jobs.get(position), listener);
-    }
-
-    @Override
-    public int getItemCount() {
-        return jobs.size();
+        holder.bind(getItem(position), listener);
     }
 
     static class JobViewHolder extends RecyclerView.ViewHolder {

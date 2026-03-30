@@ -4,12 +4,12 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+
+import com.google.android.material.snackbar.Snackbar;
 
 import com.workly.helpprovider.data.model.Profile;
 import com.workly.helpprovider.databinding.FragmentProfileBinding;
@@ -77,7 +77,7 @@ public class ProfileFragment extends Fragment {
 
         viewModel.getStatusMessage().observe(getViewLifecycleOwner(), message -> {
             if (message != null) {
-                Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                Snackbar.make(binding.getRoot(), message, Snackbar.LENGTH_SHORT).show();
             }
         });
 

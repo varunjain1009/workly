@@ -4,12 +4,12 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+
+import com.google.android.material.snackbar.Snackbar;
 
 import com.workly.helpprovider.data.model.Job;
 import com.workly.helpprovider.data.model.JobStatus;
@@ -68,7 +68,7 @@ public class JobDetailsFragment extends Fragment {
                     viewModel.completeJob(job.getId(), otp);
                 } else {
                     appLogger.d(TAG, "JobDetailsFragment(Provider): Invalid OTP: " + otp.length() + " chars");
-                    Toast.makeText(getContext(), "Please enter a valid 4-digit OTP", Toast.LENGTH_SHORT).show();
+                    Snackbar.make(binding.getRoot(), "Please enter a valid 4-digit OTP", Snackbar.LENGTH_LONG).show();
                 }
             }
         });
@@ -76,24 +76,24 @@ public class JobDetailsFragment extends Fragment {
         // specific observers for this fragment
         viewModel.getAcceptJobStatus().observe(getViewLifecycleOwner(), success -> {
             if (success) {
-                Toast.makeText(getContext(), "Job Accepted Successfully!", Toast.LENGTH_SHORT).show();
+                Snackbar.make(binding.getRoot(), "Job Accepted Successfully!", Snackbar.LENGTH_SHORT).show();
                 // Navigate back
                 if (getActivity() != null) {
                     getActivity().onBackPressed();
                 }
             } else {
-                Toast.makeText(getContext(), "Failed to accept job", Toast.LENGTH_SHORT).show();
+                Snackbar.make(binding.getRoot(), "Failed to accept job", Snackbar.LENGTH_LONG).show();
             }
         });
 
         viewModel.getCompleteJobStatus().observe(getViewLifecycleOwner(), success -> {
             if (success) {
-                Toast.makeText(getContext(), "Job Completed Successfully!", Toast.LENGTH_SHORT).show();
+                Snackbar.make(binding.getRoot(), "Job Completed Successfully!", Snackbar.LENGTH_SHORT).show();
                 if (getActivity() != null) {
                     getActivity().onBackPressed();
                 }
             } else {
-                Toast.makeText(getContext(), "Failed to complete job. Invalid OTP?", Toast.LENGTH_SHORT).show();
+                Snackbar.make(binding.getRoot(), "Failed to complete job. Invalid OTP?", Snackbar.LENGTH_LONG).show();
             }
         });
     }

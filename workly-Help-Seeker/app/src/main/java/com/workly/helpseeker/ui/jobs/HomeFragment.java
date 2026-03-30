@@ -5,14 +5,14 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
+
+import com.google.android.material.snackbar.Snackbar;
 
 import com.workly.helpseeker.R;
 import com.workly.helpseeker.data.model.Job;
@@ -62,6 +62,10 @@ public class HomeFragment extends Fragment {
         setupRecyclerView();
         observeViewModel();
 
+        binding.swipeRefresh.setOnRefreshListener(() -> {
+            viewModel.loadJobs(currentJobType, true);
+        });
+
         binding.toggleJobType.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
             if (isChecked) {
                 if (checkedId == R.id.btn_active) {
@@ -99,22 +103,24 @@ public class HomeFragment extends Fragment {
                 appLogger.d(TAG, "No jobs returned from server.");
                 binding.rvJobs.setVisibility(View.GONE);
                 binding.tvEmptyState.setVisibility(View.VISIBLE);
-                adapter.setJobs(new java.util.ArrayList<>());
+                adapter.submitList(null);
             } else {
                 appLogger.d(TAG, "Successfully loaded " + jobs.size() + " jobs.");
                 binding.rvJobs.setVisibility(View.VISIBLE);
                 binding.tvEmptyState.setVisibility(View.GONE);
-                adapter.setJobs(jobs);
+                adapter.submitList(jobs);
             }
         });
 
         viewModel.getIsLoading().observe(getViewLifecycleOwner(), isLoading -> {
-            // Update UI for loading state if needed
+            if (isLoading != null) {
+                binding.swipeRefresh.setRefreshing(isLoading);
+            }
         });
 
         viewModel.getError().observe(getViewLifecycleOwner(), error -> {
             if (error != null) {
-                Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
+                Snackbar.make(binding.getRoot(), error, Snackbar.LENGTH_LONG).show();
             }
         });
     }

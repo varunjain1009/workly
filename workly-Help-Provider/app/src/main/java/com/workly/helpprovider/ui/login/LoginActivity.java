@@ -7,10 +7,10 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
-import android.widget.Toast;
-
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
+
+import com.google.android.material.snackbar.Snackbar;
 
 import com.workly.helpprovider.databinding.ActivityLoginBinding;
 import com.workly.helpprovider.ui.main.MainActivity;
@@ -113,7 +113,7 @@ public class LoginActivity extends AppCompatActivity {
 
         viewModel.getError().observe(this, error -> {
             if (error != null) {
-                Toast.makeText(this, error, Toast.LENGTH_SHORT).show();
+                Snackbar.make(binding.getRoot(), error, Snackbar.LENGTH_LONG).show();
                 appLogger.e(TAG, "Login Error: " + error);
             }
         });
@@ -126,13 +126,12 @@ public class LoginActivity extends AppCompatActivity {
                 // immediately, but logic is safe)
                 binding.btnVerifyOtp.setEnabled(binding.etOtp.getText().length() == 4);
                 startResendTimer();
-                Toast.makeText(this, "OTP Sent", Toast.LENGTH_SHORT).show();
+                Snackbar.make(binding.getRoot(), "OTP Sent", Snackbar.LENGTH_SHORT).show();
             }
         });
 
         viewModel.getLoginSuccess().observe(this, success -> {
             if (success) {
-                Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
                 startActivity(new Intent(this, MainActivity.class));
                 finish();
             }

@@ -5,12 +5,12 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
+
+import com.google.android.material.snackbar.Snackbar;
 
 import com.workly.helpseeker.data.model.Worker;
 import com.workly.helpseeker.data.network.ApiResponse;
@@ -106,11 +106,11 @@ public class WorkerDiscoveryFragment extends Fragment {
                         // Workers found
                         binding.rvWorkers.setVisibility(View.VISIBLE);
                         binding.layoutNoWorkers.setVisibility(View.GONE);
-                        adapter.setWorkers(workers);
+                        adapter.submitList(workers);
                     }
                 } else {
                     appLogger.e(TAG, "Search failed. Status: " + response.code());
-                    Toast.makeText(getContext(), "Failed to find workers", Toast.LENGTH_SHORT).show();
+                    Snackbar.make(binding.getRoot(), "Failed to find workers", Snackbar.LENGTH_LONG).show();
                     // Optional: Show empty state on error too?
                 }
             }
@@ -118,7 +118,7 @@ public class WorkerDiscoveryFragment extends Fragment {
             @Override
             public void onFailure(Call<ApiResponse<List<Worker>>> call, Throwable t) {
                 appLogger.e(TAG, "Network error during search: " + t.getMessage(), t);
-                Toast.makeText(getContext(), "Network error", Toast.LENGTH_SHORT).show();
+                Snackbar.make(binding.getRoot(), "Network error", Snackbar.LENGTH_LONG).show();
             }
         });
     }
@@ -128,7 +128,7 @@ public class WorkerDiscoveryFragment extends Fragment {
             if (pendingJob != null) {
                 confirmAndPostJob(worker);
             } else {
-                Toast.makeText(getContext(), "Selected: " + worker.getName(), Toast.LENGTH_SHORT).show();
+                Snackbar.make(binding.getRoot(), "Selected: " + worker.getName(), Snackbar.LENGTH_SHORT).show();
             }
         }, appLogger);
         binding.rvWorkers.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -166,7 +166,7 @@ public class WorkerDiscoveryFragment extends Fragment {
             public void onResponse(Call<ApiResponse<com.workly.helpseeker.data.model.Job>> call,
                     Response<ApiResponse<com.workly.helpseeker.data.model.Job>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    Toast.makeText(getContext(), "Job Sent to " + worker.getName(), Toast.LENGTH_SHORT).show();
+                    Snackbar.make(binding.getRoot(), "Job Sent to " + worker.getName(), Snackbar.LENGTH_SHORT).show();
 
                     // Add to local ViewModel cache to avoid re-fetch on back navigation
                     JobViewModel jobViewModel = new androidx.lifecycle.ViewModelProvider(requireActivity()).get(JobViewModel.class);
@@ -174,13 +174,13 @@ public class WorkerDiscoveryFragment extends Fragment {
 
                     requireActivity().onBackPressed();
                 } else {
-                    Toast.makeText(getContext(), "Failed to create job", Toast.LENGTH_SHORT).show();
+                    Snackbar.make(binding.getRoot(), "Failed to create job", Snackbar.LENGTH_LONG).show();
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<com.workly.helpseeker.data.model.Job>> call, Throwable t) {
-                Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Snackbar.make(binding.getRoot(), "Error: " + t.getMessage(), Snackbar.LENGTH_LONG).show();
             }
         });
     }
@@ -188,7 +188,7 @@ public class WorkerDiscoveryFragment extends Fragment {
     private void loadDummyWorkers() {
         List<Worker> dummyWorkers = new ArrayList<>();
         // Add dummy data for testing UI
-        adapter.setWorkers(dummyWorkers);
+        adapter.submitList(dummyWorkers);
     }
 
     @Override

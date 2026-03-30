@@ -7,11 +7,11 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+
+import com.google.android.material.snackbar.Snackbar;
 
 import com.workly.helpseeker.data.model.Job;
 import com.workly.helpseeker.data.model.JobStatus;
@@ -128,16 +128,16 @@ public class JobDetailsFragment extends Fragment {
                     public void onResponse(Call<com.workly.helpseeker.data.network.ApiResponse<Job>> call,
                             Response<com.workly.helpseeker.data.network.ApiResponse<Job>> response) {
                         if (response.isSuccessful()) {
-                            Toast.makeText(getContext(), "Job Cancelled", Toast.LENGTH_SHORT).show();
+                            Snackbar.make(binding.getRoot(), "Job Cancelled", Snackbar.LENGTH_SHORT).show();
                             requireActivity().onBackPressed();
                         } else {
-                            Toast.makeText(getContext(), "Failed to cancel", Toast.LENGTH_SHORT).show();
+                            Snackbar.make(binding.getRoot(), "Failed to cancel", Snackbar.LENGTH_LONG).show();
                         }
                     }
 
                     @Override
                     public void onFailure(Call<com.workly.helpseeker.data.network.ApiResponse<Job>> call, Throwable t) {
-                        Toast.makeText(getContext(), "Network Error", Toast.LENGTH_SHORT).show();
+                        Snackbar.make(binding.getRoot(), "Network Error", Snackbar.LENGTH_LONG).show();
                     }
                 });
     }
@@ -154,8 +154,7 @@ public class JobDetailsFragment extends Fragment {
                 long minDiff = 2 * 60 * 60 * 1000L; // Hardcoded default for now as fragment doesn't inject properties
                                                     // easily
                 if (newTime - System.currentTimeMillis() < minDiff) {
-                    Toast.makeText(getContext(), "Must schedule at least 2 hours in advance", Toast.LENGTH_SHORT)
-                            .show();
+                    Snackbar.make(binding.getRoot(), "Must schedule at least 2 hours in advance", Snackbar.LENGTH_LONG).show();
                     return;
                 }
 
@@ -168,18 +167,18 @@ public class JobDetailsFragment extends Fragment {
                             public void onResponse(Call<com.workly.helpseeker.data.network.ApiResponse<Job>> call,
                                     Response<com.workly.helpseeker.data.network.ApiResponse<Job>> response) {
                                 if (response.isSuccessful() && response.body() != null) {
-                                    Toast.makeText(getContext(), "Job Rescheduled", Toast.LENGTH_SHORT).show();
+                                    Snackbar.make(binding.getRoot(), "Job Rescheduled", Snackbar.LENGTH_SHORT).show();
                                     job = response.body().getData();
                                     displayJobDetails();
                                 } else {
-                                    Toast.makeText(getContext(), "Failed to reschedule", Toast.LENGTH_SHORT).show();
+                                    Snackbar.make(binding.getRoot(), "Failed to reschedule", Snackbar.LENGTH_LONG).show();
                                 }
                             }
 
                             @Override
                             public void onFailure(Call<com.workly.helpseeker.data.network.ApiResponse<Job>> call,
                                     Throwable t) {
-                                Toast.makeText(getContext(), "Network Error", Toast.LENGTH_SHORT).show();
+                                Snackbar.make(binding.getRoot(), "Network Error", Snackbar.LENGTH_LONG).show();
                             }
                         });
 
@@ -208,18 +207,18 @@ public class JobDetailsFragment extends Fragment {
             public void onResponse(Call<com.workly.helpseeker.data.network.ApiResponse<Void>> call,
                     Response<com.workly.helpseeker.data.network.ApiResponse<Void>> response) {
                 if (response.isSuccessful()) {
-                    Toast.makeText(getContext(), "Review Submitted", Toast.LENGTH_SHORT).show();
+                    Snackbar.make(binding.getRoot(), "Review Submitted", Snackbar.LENGTH_SHORT).show();
                     requireActivity().onBackPressed();
                 } else {
                     appLogger.e(TAG, "Failed to submit review. Status: " + response.code());
-                    Toast.makeText(getContext(), "Failed to submit review", Toast.LENGTH_SHORT).show();
+                    Snackbar.make(binding.getRoot(), "Failed to submit review", Snackbar.LENGTH_LONG).show();
                 }
             }
 
             @Override
             public void onFailure(Call<com.workly.helpseeker.data.network.ApiResponse<Void>> call, Throwable t) {
                 appLogger.e(TAG, "Network error submitting review: " + t.getMessage(), t);
-                Toast.makeText(getContext(), "Network Error", Toast.LENGTH_SHORT).show();
+                Snackbar.make(binding.getRoot(), "Network Error", Snackbar.LENGTH_LONG).show();
             }
         });
     }

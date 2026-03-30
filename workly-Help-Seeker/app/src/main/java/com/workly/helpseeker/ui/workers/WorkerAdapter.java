@@ -4,17 +4,15 @@ import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.workly.helpseeker.data.model.Worker;
 import com.workly.helpseeker.databinding.ItemWorkerBinding;
 
-import java.util.ArrayList;
-import java.util.List;
+public class WorkerAdapter extends ListAdapter<Worker, WorkerAdapter.WorkerViewHolder> {
 
-public class WorkerAdapter extends RecyclerView.Adapter<WorkerAdapter.WorkerViewHolder> {
-
-    private List<Worker> workers = new ArrayList<>();
     private final OnWorkerClickListener listener;
     private final com.workly.helpseeker.util.AppLogger appLogger;
 
@@ -22,15 +20,24 @@ public class WorkerAdapter extends RecyclerView.Adapter<WorkerAdapter.WorkerView
         void onWorkerSelected(Worker worker);
     }
 
+    private static final DiffUtil.ItemCallback<Worker> DIFF_CALLBACK = new DiffUtil.ItemCallback<Worker>() {
+        @Override
+        public boolean areItemsTheSame(@NonNull Worker oldItem, @NonNull Worker newItem) {
+            return oldItem.getId() != null && oldItem.getId().equals(newItem.getId());
+        }
+
+        @Override
+        public boolean areContentsTheSame(@NonNull Worker oldItem, @NonNull Worker newItem) {
+            return oldItem.getId() != null && oldItem.getId().equals(newItem.getId())
+                    && Float.compare(oldItem.getRating(), newItem.getRating()) == 0
+                    && oldItem.getReviewCount() == newItem.getReviewCount();
+        }
+    };
+
     public WorkerAdapter(OnWorkerClickListener listener, com.workly.helpseeker.util.AppLogger appLogger) {
+        super(DIFF_CALLBACK);
         this.listener = listener;
         this.appLogger = appLogger;
-    }
-
-    public void setWorkers(List<Worker> workers) {
-        appLogger.d("WORKLY_DEBUG", "WorkerAdapter: Swapping worker internal array instance. Bound size: " + (workers != null ? workers.size() : 0));
-        this.workers = workers;
-        notifyDataSetChanged();
     }
 
     @NonNull
@@ -42,14 +49,9 @@ public class WorkerAdapter extends RecyclerView.Adapter<WorkerAdapter.WorkerView
 
     @Override
     public void onBindViewHolder(@NonNull WorkerViewHolder holder, int position) {
-        Worker targetWorker = workers.get(position);
+        Worker targetWorker = getItem(position);
         appLogger.d("WORKLY_DEBUG", "WorkerAdapter: UI Binding viewholder index " + position + " | worker id: " + targetWorker.getId());
         holder.bind(targetWorker, listener);
-    }
-
-    @Override
-    public int getItemCount() {
-        return workers.size();
     }
 
     static class WorkerViewHolder extends RecyclerView.ViewHolder {
