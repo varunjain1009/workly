@@ -18,7 +18,7 @@ import com.workly.helpseeker.data.model.JobStatus;
 import com.workly.helpseeker.data.network.ApiService;
 import com.workly.helpseeker.databinding.FragmentJobDetailsBinding;
 
-import java.util.Properties;
+import androidx.lifecycle.ViewModelProvider;
 
 import javax.inject.Inject;
 
@@ -129,6 +129,9 @@ public class JobDetailsFragment extends Fragment {
                             Response<com.workly.helpseeker.data.network.ApiResponse<Job>> response) {
                         if (!isAdded() || binding == null) return;
                         if (response.isSuccessful()) {
+                            // Invalidate cache so HomeFragment fetches fresh data on resume
+                            new ViewModelProvider(requireActivity()).get(JobViewModel.class)
+                                    .invalidateCache("active");
                             Snackbar.make(binding.getRoot(), "Job Cancelled", Snackbar.LENGTH_SHORT).show();
                             requireActivity().onBackPressed();
                         } else {
@@ -170,8 +173,12 @@ public class JobDetailsFragment extends Fragment {
                                     Response<com.workly.helpseeker.data.network.ApiResponse<Job>> response) {
                                 if (!isAdded() || binding == null) return;
                                 if (response.isSuccessful() && response.body() != null) {
-                                    Snackbar.make(binding.getRoot(), "Job Rescheduled", Snackbar.LENGTH_SHORT).show();
                                     job = response.body().getData();
+                                    // Push the updated job into the shared ViewModel cache so
+                                    // HomeFragment reflects the new date without a network round-trip
+                                    new ViewModelProvider(requireActivity()).get(JobViewModel.class)
+                                            .updateJobLocal(job);
+                                    Snackbar.make(binding.getRoot(), "Job Rescheduled", Snackbar.LENGTH_SHORT).show();
                                     displayJobDetails();
                                 } else {
                                     Snackbar.make(binding.getRoot(), "Failed to reschedule", Snackbar.LENGTH_LONG).show();

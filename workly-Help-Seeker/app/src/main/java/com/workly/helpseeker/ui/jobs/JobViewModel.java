@@ -103,6 +103,27 @@ public class JobViewModel extends ViewModel {
         loadJobs("active", forceRefresh);
     }
 
+    /**
+     * Replace an existing job in the cache with an updated version (e.g. after reschedule).
+     * Emits the refreshed list immediately so the UI reflects the change without a network call.
+     */
+    public void updateJobLocal(Job updatedJob) {
+        appLogger.d(TAG, "Locally updating job in cache: " + updatedJob.getId());
+        for (Map.Entry<String, List<Job>> entry : jobCache.entrySet()) {
+            List<Job> cached = new ArrayList<>(entry.getValue());
+            for (int i = 0; i < cached.size(); i++) {
+                if (updatedJob.getId() != null && updatedJob.getId().equals(cached.get(i).getId())) {
+                    cached.set(i, updatedJob);
+                    jobCache.put(entry.getKey(), cached);
+                    if (entry.getKey().equals(currentType)) {
+                        jobs.setValue(cached);
+                    }
+                    return;
+                }
+            }
+        }
+    }
+
     public void addJobLocal(Job job) {
         appLogger.d(TAG, "Locally adding new job to active cache: " + job.getTitle());
         List<Job> activeJobs = jobCache.get("active");
