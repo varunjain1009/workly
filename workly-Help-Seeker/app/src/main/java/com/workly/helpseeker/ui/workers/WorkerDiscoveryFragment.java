@@ -89,6 +89,7 @@ public class WorkerDiscoveryFragment extends Fragment {
         apiService.searchWorkers(skill, 0.0, 0.0, radius).enqueue(new Callback<ApiResponse<List<Worker>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<Worker>>> call, Response<ApiResponse<List<Worker>>> response) {
+                if (!isAdded() || binding == null) return;
                 if (response.isSuccessful() && response.body() != null) {
                     List<Worker> workers = response.body().getData();
                     appLogger.d(TAG, "Found " + (workers != null ? workers.size() : 0) + " workers");
@@ -117,6 +118,7 @@ public class WorkerDiscoveryFragment extends Fragment {
 
             @Override
             public void onFailure(Call<ApiResponse<List<Worker>>> call, Throwable t) {
+                if (!isAdded() || binding == null) return;
                 appLogger.e(TAG, "Network error during search: " + t.getMessage(), t);
                 Snackbar.make(binding.getRoot(), "Network error", Snackbar.LENGTH_LONG).show();
             }
@@ -165,6 +167,7 @@ public class WorkerDiscoveryFragment extends Fragment {
             @Override
             public void onResponse(Call<ApiResponse<com.workly.helpseeker.data.model.Job>> call,
                     Response<ApiResponse<com.workly.helpseeker.data.model.Job>> response) {
+                if (!isAdded() || binding == null) return;
                 if (response.isSuccessful() && response.body() != null) {
                     Snackbar.make(binding.getRoot(), "Job Sent to " + worker.getName(), Snackbar.LENGTH_SHORT).show();
 
@@ -180,6 +183,7 @@ public class WorkerDiscoveryFragment extends Fragment {
 
             @Override
             public void onFailure(Call<ApiResponse<com.workly.helpseeker.data.model.Job>> call, Throwable t) {
+                if (!isAdded() || binding == null) return;
                 Snackbar.make(binding.getRoot(), "Error: " + t.getMessage(), Snackbar.LENGTH_LONG).show();
             }
         });

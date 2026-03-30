@@ -255,6 +255,7 @@ public class PostJobFragment extends Fragment {
             apiService.postJob(job).enqueue(new Callback<ApiResponse<Job>>() {
                 @Override
                 public void onResponse(Call<ApiResponse<Job>> call, Response<ApiResponse<Job>> response) {
+                    if (!isAdded() || binding == null) return;
                     if (response.isSuccessful() && response.body() != null) {
                         appLogger.d(TAG, "Job Posted Successfully. ID: " + response.body().getData().getId());
                         Snackbar.make(binding.getRoot(), "Job Posted Successfully", Snackbar.LENGTH_SHORT).show();
@@ -272,6 +273,7 @@ public class PostJobFragment extends Fragment {
 
                 @Override
                 public void onFailure(Call<ApiResponse<Job>> call, Throwable t) {
+                    if (!isAdded() || binding == null) return;
                     appLogger.e(TAG, "Network error posting job: " + t.getMessage(), t);
                     Snackbar.make(binding.getRoot(), "Network Error", Snackbar.LENGTH_LONG).show();
                 }

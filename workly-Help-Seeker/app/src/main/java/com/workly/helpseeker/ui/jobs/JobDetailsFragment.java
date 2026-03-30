@@ -127,6 +127,7 @@ public class JobDetailsFragment extends Fragment {
                     @Override
                     public void onResponse(Call<com.workly.helpseeker.data.network.ApiResponse<Job>> call,
                             Response<com.workly.helpseeker.data.network.ApiResponse<Job>> response) {
+                        if (!isAdded() || binding == null) return;
                         if (response.isSuccessful()) {
                             Snackbar.make(binding.getRoot(), "Job Cancelled", Snackbar.LENGTH_SHORT).show();
                             requireActivity().onBackPressed();
@@ -137,6 +138,7 @@ public class JobDetailsFragment extends Fragment {
 
                     @Override
                     public void onFailure(Call<com.workly.helpseeker.data.network.ApiResponse<Job>> call, Throwable t) {
+                        if (!isAdded() || binding == null) return;
                         Snackbar.make(binding.getRoot(), "Network Error", Snackbar.LENGTH_LONG).show();
                     }
                 });
@@ -166,6 +168,7 @@ public class JobDetailsFragment extends Fragment {
                             @Override
                             public void onResponse(Call<com.workly.helpseeker.data.network.ApiResponse<Job>> call,
                                     Response<com.workly.helpseeker.data.network.ApiResponse<Job>> response) {
+                                if (!isAdded() || binding == null) return;
                                 if (response.isSuccessful() && response.body() != null) {
                                     Snackbar.make(binding.getRoot(), "Job Rescheduled", Snackbar.LENGTH_SHORT).show();
                                     job = response.body().getData();
@@ -178,6 +181,7 @@ public class JobDetailsFragment extends Fragment {
                             @Override
                             public void onFailure(Call<com.workly.helpseeker.data.network.ApiResponse<Job>> call,
                                     Throwable t) {
+                                if (!isAdded() || binding == null) return;
                                 Snackbar.make(binding.getRoot(), "Network Error", Snackbar.LENGTH_LONG).show();
                             }
                         });
@@ -206,6 +210,7 @@ public class JobDetailsFragment extends Fragment {
             @Override
             public void onResponse(Call<com.workly.helpseeker.data.network.ApiResponse<Void>> call,
                     Response<com.workly.helpseeker.data.network.ApiResponse<Void>> response) {
+                if (!isAdded() || binding == null) return;
                 if (response.isSuccessful()) {
                     Snackbar.make(binding.getRoot(), "Review Submitted", Snackbar.LENGTH_SHORT).show();
                     requireActivity().onBackPressed();
@@ -217,6 +222,7 @@ public class JobDetailsFragment extends Fragment {
 
             @Override
             public void onFailure(Call<com.workly.helpseeker.data.network.ApiResponse<Void>> call, Throwable t) {
+                if (!isAdded() || binding == null) return;
                 appLogger.e(TAG, "Network error submitting review: " + t.getMessage(), t);
                 Snackbar.make(binding.getRoot(), "Network Error", Snackbar.LENGTH_LONG).show();
             }

@@ -118,6 +118,7 @@ public class LoginActivity extends AppCompatActivity {
                 apiService.requestOtp(new OtpRequest(phone)).enqueue(new Callback<ApiResponse<Void>>() {
                     @Override
                     public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
+                        if (isFinishing() || isDestroyed()) return;
                         if (response.isSuccessful()) {
                             appLogger.d(TAG, "OTP Requested Successfully for: " + phone);
                             binding.tilOtp.setVisibility(View.VISIBLE);
@@ -133,6 +134,7 @@ public class LoginActivity extends AppCompatActivity {
 
                     @Override
                     public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
+                        if (isFinishing() || isDestroyed()) return;
                         appLogger.e(TAG, "Network error during Requesting OTP: " + t.getMessage(), t);
                         Snackbar.make(binding.getRoot(), "Network Error", Snackbar.LENGTH_LONG).show();
                     }
@@ -151,6 +153,7 @@ public class LoginActivity extends AppCompatActivity {
                 @Override
                 public void onResponse(Call<ApiResponse<AuthResponse>> call,
                         Response<ApiResponse<AuthResponse>> response) {
+                    if (isFinishing() || isDestroyed()) return;
                     if (response.isSuccessful() && response.body() != null) {
                         String token = response.body().getData().getToken();
                         appLogger.d(TAG, "Login Successful! Token received.");
@@ -165,6 +168,7 @@ public class LoginActivity extends AppCompatActivity {
 
                 @Override
                 public void onFailure(Call<ApiResponse<AuthResponse>> call, Throwable t) {
+                    if (isFinishing() || isDestroyed()) return;
                     appLogger.e(TAG, "Network error during Login: " + t.getMessage(), t);
                     Snackbar.make(binding.getRoot(), "Network Error", Snackbar.LENGTH_LONG).show();
                 }
