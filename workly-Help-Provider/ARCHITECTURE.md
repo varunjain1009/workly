@@ -171,7 +171,7 @@ sequenceDiagram
 
 ## Data Storage
 
-### SharedPreferences (AuthManager)
+### EncryptedSharedPreferences (AuthManager)
 - `auth_token`: JWT for API authentication
 - `mobile_number`: User's phone number
 
@@ -244,7 +244,7 @@ graph LR
 
 ## Security
 
-- **Authentication**: JWT tokens stored securely in SharedPreferences
+- **Authentication**: JWT tokens securely encrypted in EncryptedSharedPreferences
 - **Location**: Only shared when provider is "Online"
 - **Permissions**: Runtime permissions for Location, Notifications
 - **API**: All endpoints require `Authorization: Bearer <token>` header

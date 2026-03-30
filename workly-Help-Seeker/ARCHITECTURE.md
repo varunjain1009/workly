@@ -241,7 +241,7 @@ sequenceDiagram
 
 ## Data Storage
 
-### SharedPreferences (AuthManager)
+### EncryptedSharedPreferences (AuthManager)
 - `auth_token`: JWT for API calls
 - `mobile_number`: User's phone number
 
@@ -328,7 +328,7 @@ sequenceDiagram
 
 ## Security
 
-- **Authentication**: JWT tokens in SharedPreferences
+- **Authentication**: JWT tokens and sensitive info in EncryptedSharedPreferences
 - **API Security**: All requests include `Authorization` header
 - **Data Validation**: Server-side validation for job parameters
 - **Permissions**: Location (for job posting), Notifications
