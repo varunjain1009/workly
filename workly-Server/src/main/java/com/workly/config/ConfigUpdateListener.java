@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 public class ConfigUpdateListener implements MessageListener {
 
     private final RuntimeConfigCache configCache;
+    private final com.workly.modules.config.ConfigSyncService configSyncService;
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
@@ -32,6 +33,12 @@ public class ConfigUpdateListener implements MessageListener {
                 if ("GLOBAL".equals(scope)) {
                     configCache.put(key, value);
                     log.info("Updated runtime config: {} = {}", key, value);
+                    // Push update immediately to all registered app devices
+                    configSyncService.forceNotifyAppsOfConfigChange();
+                } else if ("APP".equals(scope) || "PROVIDER".equals(scope) || "SEEKER".equals(scope)) {
+                    // App-targeted config: push FCM so apps re-fetch; not applied in backend cache
+                    log.info("App-scoped config change for scope={}, key={} — triggering FCM push", scope, key);
+                    configSyncService.forceNotifyAppsOfConfigChange();
                 }
             }
         } catch (Exception e) {

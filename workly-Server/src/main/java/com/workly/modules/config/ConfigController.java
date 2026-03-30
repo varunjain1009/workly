@@ -44,6 +44,9 @@ public class ConfigController {
     @Value("${custom.chat.url:ws://10.0.2.2:8082/ws/chat}")
     private String chatUrl;
 
+    @Value("${custom.job.refresh-interval-minutes:5}")
+    private int jobRefreshIntervalMinutes;
+
     @org.springframework.beans.factory.annotation.Autowired
     private ConfigSyncService configSyncService;
 
@@ -58,6 +61,7 @@ public class ConfigController {
                 "jobMaxRadiusKm", jobMaxRadiusKm,
                 "jobMinAdvanceHours", jobMinAdvanceHours,
                 "assignmentMode", assignmentMode,
+                "jobRefreshIntervalMinutes", jobRefreshIntervalMinutes,
                 "monetisation", Map.of(
                         "enabled", monetisationEnabled,
                         "model", monetisationModel,

@@ -6,6 +6,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.workly.helpprovider.data.model.Job;
 import com.workly.helpprovider.data.remote.ApiResponse;
 import com.workly.helpprovider.data.remote.ApiService;
+import com.workly.helpprovider.data.config.ConfigManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,18 +22,23 @@ import retrofit2.Response;
 public class JobRepository {
 
     private static final String TAG = "WORKLY_DEBUG";
-    private static final long STALENESS_THRESHOLD_MS = 60_000; // 60 seconds
+    // Default 5 min; overridden at runtime from remote config
+    private static final long DEFAULT_STALENESS_MS = 5 * 60 * 1000L;
 
     private final ApiService apiService;
+    private final ConfigManager configManager;
     private final com.workly.helpprovider.util.AppLogger appLogger;
 
     // Persistent LiveData — survives across fragment recreations
     private final MutableLiveData<List<Job>> availableJobsData = new MutableLiveData<>();
+    // Emits a human-readable throttle message when the user tries to refresh too early
+    private final MutableLiveData<String> throttleMessage = new MutableLiveData<>();
     private long lastFetchTime = 0;
 
     @Inject
-    public JobRepository(ApiService apiService, com.workly.helpprovider.util.AppLogger appLogger) {
+    public JobRepository(ApiService apiService, ConfigManager configManager, com.workly.helpprovider.util.AppLogger appLogger) {
         this.apiService = apiService;
+        this.configManager = configManager;
         this.appLogger = appLogger;
     }
 
@@ -43,19 +49,41 @@ public class JobRepository {
         return availableJobsData;
     }
 
+    /** Emits a throttle warning message if the user tries to refresh too early. */
+    public LiveData<String> getThrottleMessage() {
+        return throttleMessage;
+    }
+
+    public void clearThrottleMessage() {
+        throttleMessage.setValue(null);
+    }
+
     /**
      * Refreshes available jobs from network, respecting staleness threshold.
      * @param force If true, ignores staleness and always fetches.
      */
-    public void refreshAvailableJobs(boolean force) {
-        if (!force && isCacheFresh()) {
-            long ageSeconds = (System.currentTimeMillis() - lastFetchTime) / 1000;
-            appLogger.d(TAG, "JobRepository: Skipping fetch — cache is fresh (age: " + ageSeconds + "s)");
+    public void refreshAvailableJobs(boolean isManualPull) {
+        long intervalMs = getThrottleIntervalMs();
+        
+        // If the cache is still fresh based on our interval Config
+        if (isCacheFresh(intervalMs)) {
+            if (isManualPull) {
+                long ageSeconds = (System.currentTimeMillis() - lastFetchTime) / 1000;
+                long waitSeconds = (intervalMs / 1000) - ageSeconds;
+                long waitMinutes = waitSeconds / 60;
+                String msg = waitMinutes > 1
+                        ? "Please wait " + waitMinutes + " minutes before refreshing jobs."
+                        : "Please wait " + waitSeconds + " seconds before refreshing jobs.";
+                appLogger.d(TAG, "JobRepository: Throttled manual pull — " + msg);
+                throttleMessage.postValue(msg);
+            } else {
+                appLogger.d(TAG, "JobRepository: Cache fresh, skipping background auto-refresh.");
+            }
             return;
         }
 
         appLogger.d(TAG, "JobRepository: Fetching available jobs from network."
-                + (force ? " (forced)" : " (stale/missing)"));
+                + (isManualPull ? " (manual pull)" : " (stale/missing)"));
         apiService.getAvailableJobs().enqueue(new Callback<ApiResponse<List<Job>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<Job>>> call, Response<ApiResponse<List<Job>>> response) {
@@ -105,10 +133,18 @@ public class JobRepository {
         apiService.completeJob(jobId, body).enqueue(callback);
     }
 
-    private boolean isCacheFresh() {
+    private long getThrottleIntervalMs() {
+        if (configManager != null && configManager.getConfig() != null) {
+            int minutes = configManager.getConfig().getJobRefreshIntervalMinutes();
+            if (minutes > 0) return minutes * 60 * 1000L;
+        }
+        return DEFAULT_STALENESS_MS;
+    }
+
+    private boolean isCacheFresh(long intervalMs) {
         if (lastFetchTime == 0) return false;
         if (availableJobsData.getValue() == null) return false;
-        return (System.currentTimeMillis() - lastFetchTime) < STALENESS_THRESHOLD_MS;
+        return (System.currentTimeMillis() - lastFetchTime) < intervalMs;
     }
 }
 

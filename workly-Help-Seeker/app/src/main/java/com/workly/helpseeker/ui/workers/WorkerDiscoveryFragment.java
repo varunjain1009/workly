@@ -10,6 +10,15 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.content.ContextCompat;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+
 import com.google.android.material.snackbar.Snackbar;
 
 import com.workly.helpseeker.data.model.Worker;
@@ -35,6 +44,10 @@ public class WorkerDiscoveryFragment extends Fragment {
     private static final String TAG = "WORKLY_DEBUG";
     private FragmentWorkerDiscoveryBinding binding;
     private WorkerAdapter adapter;
+    private FusedLocationProviderClient fusedLocationClient;
+    private ActivityResultLauncher<String> requestPermissionLauncher;
+    private String pendingSkill = "";
+    private int pendingRadius = 10;
 
     @Inject
     ApiService apiService;
@@ -55,6 +68,18 @@ public class WorkerDiscoveryFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
+        requestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+            if (isGranted) {
+                appLogger.d(TAG, "Location permission granted for discovery.");
+                searchWorkersWithLocation(pendingSkill, pendingRadius);
+            } else {
+                appLogger.e(TAG, "Location permission denied! Using default 0.0 for discovery");
+                Snackbar.make(binding.getRoot(), "Location permission denied. Using default location.", Snackbar.LENGTH_LONG).show();
+                performSearch(pendingSkill, pendingRadius, 0.0, 0.0);
+            }
+        });
 
         binding.toolbar.setNavigationOnClickListener(v -> requireActivity().onBackPressed());
 
@@ -84,9 +109,33 @@ public class WorkerDiscoveryFragment extends Fragment {
     }
 
     private void searchWorkers(String skill, int radius) {
-        // Using dummy lat/lon for now as per user GPS location requirement (to be
-        // implemented)
-        apiService.searchWorkers(skill, 0.0, 0.0, radius).enqueue(new Callback<ApiResponse<List<Worker>>>() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            searchWorkersWithLocation(skill, radius);
+        } else {
+            pendingSkill = skill;
+            pendingRadius = radius;
+            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+    }
+
+    private void searchWorkersWithLocation(String skill, int radius) {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            fusedLocationClient.getLastLocation()
+                    .addOnSuccessListener(requireActivity(), location -> {
+                        if (location != null) {
+                            performSearch(skill, radius, location.getLatitude(), location.getLongitude());
+                        } else {
+                            performSearch(skill, radius, 0.0, 0.0);
+                        }
+                    })
+                    .addOnFailureListener(e -> performSearch(skill, radius, 0.0, 0.0));
+        } else {
+            performSearch(skill, radius, 0.0, 0.0);
+        }
+    }
+
+    private void performSearch(String skill, int radius, double lat, double lon) {
+        apiService.searchWorkers(skill, lat, lon, radius).enqueue(new Callback<ApiResponse<List<Worker>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<Worker>>> call, Response<ApiResponse<List<Worker>>> response) {
                 if (!isAdded() || binding == null) return;

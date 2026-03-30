@@ -19,6 +19,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.content.ContextCompat;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+
 import com.google.android.material.snackbar.Snackbar;
 
 import com.workly.helpseeker.R;
@@ -47,6 +56,8 @@ public class PostJobFragment extends Fragment {
     private FragmentPostJobBinding binding;
     private JobViewModel jobViewModel;
     private final Set<String> cachedSkills = new HashSet<>();
+    private FusedLocationProviderClient fusedLocationClient;
+    private ActivityResultLauncher<String> requestPermissionLauncher;
 
     @Inject
     ApiService apiService;
@@ -72,6 +83,18 @@ public class PostJobFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
+        requestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+            if (isGranted) {
+                appLogger.d(TAG, "Location permission granted.");
+                postJobWithLocation();
+            } else {
+                appLogger.e(TAG, "Location permission denied! Using default 0.0");
+                Snackbar.make(binding.getRoot(), "Location permission denied. Using default location.", Snackbar.LENGTH_LONG).show();
+                postJobWithCoordinates(0.0, 0.0);
+            }
+        });
 
         binding.toolbar.setNavigationOnClickListener(v -> requireActivity().onBackPressed());
 
@@ -260,7 +283,31 @@ public class PostJobFragment extends Fragment {
     }
 
     private void postJob() {
-        appLogger.d(TAG, "PostJobFragment: [ENTER] postJob");
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            postJobWithLocation();
+        } else {
+            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+    }
+
+    private void postJobWithLocation() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            fusedLocationClient.getLastLocation()
+                    .addOnSuccessListener(requireActivity(), location -> {
+                        if (location != null) {
+                            postJobWithCoordinates(location.getLatitude(), location.getLongitude());
+                        } else {
+                            postJobWithCoordinates(0.0, 0.0);
+                        }
+                    })
+                    .addOnFailureListener(e -> postJobWithCoordinates(0.0, 0.0));
+        } else {
+            postJobWithCoordinates(0.0, 0.0);
+        }
+    }
+
+    private void postJobWithCoordinates(double lat, double lon) {
+        appLogger.d(TAG, "PostJobFragment: [ENTER] postJobWithCoordinates lat: " + lat + " lon: " + lon);
         String title = binding.etTitle.getText().toString();
         String description = binding.etDescription.getText().toString();
         String skill = binding.etSkill.getText().toString();
@@ -293,7 +340,7 @@ public class PostJobFragment extends Fragment {
             }
         }
 
-        Job job = new Job(title, description, skill, new Location(0.0, 0.0, "Current Location"),
+        Job job = new Job(title, description, skill, new Location(lat, lon, "Current Location"),
                 radius, preferredTime, type, mode);
 
         if (type == JobType.IMMEDIATE) {

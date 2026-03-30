@@ -2,6 +2,7 @@ package com.workly.helpseeker.data.network;
 
 import com.workly.helpseeker.data.model.Job;
 import com.workly.helpseeker.data.model.Worker;
+import com.workly.helpseeker.data.model.User;
 
 import java.util.List;
 
@@ -54,6 +55,9 @@ public interface ApiService {
 
     @GET("config/public")
     Call<ApiResponse<com.workly.helpseeker.data.model.ConfigResponse>> getPublicConfig();
+
+    @GET("profiles/seeker")
+    Call<ApiResponse<User>> getSeekerProfile();
 
     @GET("skills/autocomplete")
     Call<java.util.List<String>> getSkillSuggestions(@retrofit2.http.Query("query") String query);

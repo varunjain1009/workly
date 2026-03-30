@@ -58,6 +58,30 @@ public class ConfigSyncService {
         log.debug("ConfigSyncService: [EXIT] notifyAppsOfConfigChange - dispatched {} of {} tokens", sentCount, tokens.size());
         log.info("Config sync notification process completed. Sent {} notifications.", sentCount);
     }
+    
+    /**
+     * Forcefully sends config update notifications to all registered devices 
+     * instantly, intentionally bypassing the interval throttling.
+     * Use this ONLY when critical real-time backend updates trigger explicitly.
+     */
+    public void forceNotifyAppsOfConfigChange() {
+        log.info("ConfigSyncService: FORCE-SYNC triggered - bypassing interval limits.");
+        List<UserToken> tokens = userTokenRepository.findAll();
+        long now = Instant.now().toEpochMilli();
+        int sentCount = 0;
+        
+        for (UserToken token : tokens) {
+            try {
+                fcmService.sendNotification(token.getFcmToken(), "CONFIG_UPDATE", "Live backend configuration triggered.");
+                token.setLastConfigNotificationTime(now);
+                userTokenRepository.save(token);
+                sentCount++;
+            } catch (Exception e) {
+                log.error("Failed to send force-sync config notification to token: {}", token.getId(), e);
+            }
+        }
+        log.info("Force-sync dispatched FCM to {} devices.", sentCount);
+    }
 
     /**
      * Called when app manually syncs or confirms receipt.

@@ -24,7 +24,6 @@ public class Profile implements Serializable {
 
     @SerializedName("visiting_charges")
     private double visitingCharges;
-    @androidx.room.Ignore
     @SerializedName("skills")
     private java.util.List<String> skills;
 

@@ -13,6 +13,8 @@ import retrofit2.Response;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import android.content.Context;
+import dagger.hilt.android.qualifiers.ApplicationContext;
 
 @Singleton
 public class ProfileRepository {
@@ -22,26 +24,37 @@ public class ProfileRepository {
     private final com.workly.helpprovider.util.AppLogger appLogger;
     private static final String TAG = "WORKLY_DEBUG";
     private static final long PROFILE_STALENESS_THRESHOLD_MS = 300_000; // 5 minutes
-    private long lastProfileFetchTime = 0;
+    private android.content.SharedPreferences prefs;
+
 
     @Inject
-    public ProfileRepository(ProfileDao profileDao, ApiService apiService, com.workly.helpprovider.util.AppLogger appLogger) {
+    public ProfileRepository(ProfileDao profileDao, ApiService apiService, com.workly.helpprovider.util.AppLogger appLogger, @ApplicationContext Context context) {
         this.profileDao = profileDao;
         this.apiService = apiService;
         this.executorService = Executors.newSingleThreadExecutor();
         this.appLogger = appLogger;
+        // The Application Context holds shared preferences securely
+        this.prefs = context.getSharedPreferences("workly_prefs", Context.MODE_PRIVATE);
     }
 
     public LiveData<Profile> getProfile() {
-        if (!isProfileFresh()) {
-            refreshProfile();
-        } else {
-            appLogger.d(TAG, "ProfileRepository: Profile cache is fresh, serving from local DB skip network sync.");
-        }
+        executorService.execute(() -> {
+            Profile localProfile = profileDao.getProfileSync();
+            if (localProfile == null) {
+                appLogger.d(TAG, "ProfileRepository: Local DB is completely empty (wiped). Forcing network sync.");
+                refreshProfile();
+            } else if (!isProfileFresh()) {
+                appLogger.d(TAG, "ProfileRepository: Profile cache is stale. Triggering background refresh.");
+                refreshProfile();
+            } else {
+                appLogger.d(TAG, "ProfileRepository: Profile cache is fresh & DB valid, serving from local DB skip network sync.");
+            }
+        });
         return profileDao.getProfile();
     }
 
     private boolean isProfileFresh() {
+        long lastProfileFetchTime = prefs.getLong("last_profile_fetch_time", 0);
         if (lastProfileFetchTime == 0) return false;
         return (System.currentTimeMillis() - lastProfileFetchTime) < PROFILE_STALENESS_THRESHOLD_MS;
     }
@@ -66,7 +79,7 @@ public class ProfileRepository {
                         p.setExpertise(sb.toString());
                     }
                     executorService.execute(() -> profileDao.insertProfile(p));
-                    lastProfileFetchTime = System.currentTimeMillis();
+                    prefs.edit().putLong("last_profile_fetch_time", System.currentTimeMillis()).apply();
                 }
             }
 
@@ -96,7 +109,7 @@ public class ProfileRepository {
                         p.setExpertise(sb.toString());
                     }
                     executorService.execute(() -> profileDao.insertProfile(p));
-                    lastProfileFetchTime = System.currentTimeMillis();
+                    prefs.edit().putLong("last_profile_fetch_time", System.currentTimeMillis()).apply();
                 }
             }
 

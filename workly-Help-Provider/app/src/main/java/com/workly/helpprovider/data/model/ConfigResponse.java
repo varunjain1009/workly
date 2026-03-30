@@ -24,6 +24,9 @@ public class ConfigResponse {
     @SerializedName("chatUrl")
     private String chatUrl;
 
+    @SerializedName("jobRefreshIntervalMinutes")
+    private int jobRefreshIntervalMinutes = 5; // default 5 min
+
     @SerializedName("monetisation")
     private MonetisationConfig monetisation;
 
@@ -41,6 +44,14 @@ public class ConfigResponse {
 
     public boolean isDebugEnabled() {
         return debugEnabled;
+    }
+
+    public int getJobRefreshIntervalMinutes() {
+        return jobRefreshIntervalMinutes > 0 ? jobRefreshIntervalMinutes : 5;
+    }
+
+    public void setJobRefreshIntervalMinutes(int jobRefreshIntervalMinutes) {
+        this.jobRefreshIntervalMinutes = jobRefreshIntervalMinutes;
     }
 
     public String getChatUrl() {

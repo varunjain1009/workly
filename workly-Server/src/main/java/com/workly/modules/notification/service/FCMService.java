@@ -25,6 +25,7 @@ public class FCMService {
                             .setTitle(title)
                             .setBody(body)
                             .build())
+                    .putData("type", title)           // allows onMessageReceived to identify type
                     .putData("click_action", "FLUTTER_NOTIFICATION_CLICK")
                     .build();
             log.debug("FCMService: Message object constructed, attempting Firebase dispatch");

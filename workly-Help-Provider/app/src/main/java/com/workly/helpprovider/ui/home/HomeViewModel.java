@@ -54,6 +54,15 @@ public class HomeViewModel extends ViewModel {
         return jobRepository.getAvailableJobs();
     }
 
+    /** Emits a human-readable message when the user pulls-to-refresh too often. */
+    public LiveData<String> getThrottleMessage() {
+        return jobRepository.getThrottleMessage();
+    }
+
+    public void clearThrottleMessage() {
+        jobRepository.clearThrottleMessage();
+    }
+
     /**
      * Force-refreshes jobs from network, ignoring staleness.
      */

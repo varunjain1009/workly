@@ -7,7 +7,10 @@ import androidx.room.RoomDatabase;
 
 import com.workly.helpprovider.data.model.Profile;
 
+import androidx.room.TypeConverters;
+
 @Database(entities = { Profile.class }, version = 1, exportSchema = false)
+@TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
     public abstract ProfileDao profileDao();
 

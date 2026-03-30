@@ -19,7 +19,7 @@ public class DatabaseModule {
     @Singleton
     public WorklyProviderDatabase provideDatabase(@ApplicationContext Context context) {
         return Room.databaseBuilder(context, WorklyProviderDatabase.class, "workly_provider_db")
-                .fallbackToDestructiveMigration()
+                .addMigrations(WorklyProviderDatabase.MIGRATION_1_2)
                 .build();
     }
 

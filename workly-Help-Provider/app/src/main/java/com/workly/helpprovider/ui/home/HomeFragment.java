@@ -49,7 +49,10 @@ public class HomeFragment extends Fragment implements JobAdapter.OnJobClickListe
         setupObservers();
         setupSwitchListener();
 
-        binding.swipeRefresh.setOnRefreshListener(() -> viewModel.refreshJobs());
+        binding.swipeRefresh.setOnRefreshListener(() -> {
+            viewModel.refreshJobs();
+            // spinner will be cleared either by data arriving or by throttle message
+        });
     }
 
     private void setupRecyclerView() {
@@ -87,14 +90,23 @@ public class HomeFragment extends Fragment implements JobAdapter.OnJobClickListe
                 appLogger.d(TAG, "HomeFragment(Provider): Profile state loaded: " + profile.isAvailable());
                 binding.switchAvailability.setOnCheckedChangeListener(null);
                 binding.switchAvailability.setChecked(profile.isAvailable());
-                
+
                 if (profile.isAvailable()) {
                     binding.tvStatusLabel.setText("Status: Available");
                 } else {
                     binding.tvStatusLabel.setText("Status: Not Available");
                 }
-                
+
                 setupSwitchListener();
+            }
+        });
+
+        // Throttle message: shown when the user tries to refresh too soon
+        viewModel.getThrottleMessage().observe(getViewLifecycleOwner(), msg -> {
+            if (msg != null && !msg.isEmpty()) {
+                binding.swipeRefresh.setRefreshing(false);
+                Snackbar.make(binding.getRoot(), msg, Snackbar.LENGTH_LONG).show();
+                viewModel.clearThrottleMessage();
             }
         });
     }
