@@ -116,11 +116,11 @@ public class PostJobFragment extends Fragment {
                 }
 
                 // Call API
-                apiService.getSkillSuggestions(query).enqueue(new Callback<ApiResponse<List<String>>>() {
+                apiService.getSkillSuggestions(query).enqueue(new Callback<List<String>>() {
                     @Override
-                    public void onResponse(Call<ApiResponse<List<String>>> call, Response<ApiResponse<List<String>>> response) {
+                    public void onResponse(Call<List<String>> call, Response<List<String>> response) {
                         if (isAdded() && response.isSuccessful() && response.body() != null) {
-                            List<String> suggestions = response.body().getData();
+                            List<String> suggestions = response.body();
                             if (suggestions != null) {
                                 cachedSkills.addAll(suggestions);
                                 updateSkillAdapter(suggestions);
@@ -129,7 +129,7 @@ public class PostJobFragment extends Fragment {
                     }
 
                     @Override
-                    public void onFailure(Call<ApiResponse<List<String>>> call, Throwable t) {
+                    public void onFailure(Call<List<String>> call, Throwable t) {
                         appLogger.e(TAG, "Failed to load skill suggestions", t);
                     }
                 });

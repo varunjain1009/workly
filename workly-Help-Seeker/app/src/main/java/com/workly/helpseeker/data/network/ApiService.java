@@ -56,5 +56,5 @@ public interface ApiService {
     Call<ApiResponse<com.workly.helpseeker.data.model.ConfigResponse>> getPublicConfig();
 
     @GET("skills/autocomplete")
-    Call<ApiResponse<java.util.List<String>>> getSkillSuggestions(@retrofit2.http.Query("query") String query);
+    Call<java.util.List<String>> getSkillSuggestions(@retrofit2.http.Query("query") String query);
 }
