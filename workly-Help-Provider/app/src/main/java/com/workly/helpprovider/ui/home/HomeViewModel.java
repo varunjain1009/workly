@@ -43,6 +43,10 @@ public class HomeViewModel extends ViewModel {
         return profileRepository.getProfile();
     }
 
+    public void clearAvailabilityUpdated() {
+        availabilityUpdated.setValue(false);
+    }
+
     /**
      * Returns persistent LiveData from repository — no new object created on each call.
      */

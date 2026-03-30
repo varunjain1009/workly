@@ -36,6 +36,10 @@ public class ProfileViewModel extends ViewModel {
         return isLoading;
     }
 
+    public void clearStatusMessage() {
+        statusMessage.setValue(null);
+    }
+
     public void updateProfile(Profile profile) {
         appLogger.d(TAG, "ProfileViewModel(Provider): [ENTER] updateProfile - name: " + profile.getName());
         isLoading.setValue(true);

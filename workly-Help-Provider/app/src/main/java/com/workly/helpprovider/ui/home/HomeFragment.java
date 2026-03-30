@@ -78,6 +78,7 @@ public class HomeFragment extends Fragment implements JobAdapter.OnJobClickListe
         viewModel.getAvailabilityUpdated().observe(getViewLifecycleOwner(), updated -> {
             if (updated) {
                 Snackbar.make(binding.getRoot(), "Availability updated", Snackbar.LENGTH_SHORT).show();
+                viewModel.clearAvailabilityUpdated();
             }
         });
 
@@ -100,6 +101,7 @@ public class HomeFragment extends Fragment implements JobAdapter.OnJobClickListe
 
     private void setupSwitchListener() {
         binding.switchAvailability.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (!buttonView.isPressed()) return; // Block programmatic triggers
             appLogger.d(TAG, "HomeFragment(Provider): Availability toggled to: " + isChecked);
             viewModel.setAvailability(isChecked);
             if (isChecked) {

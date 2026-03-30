@@ -77,6 +77,7 @@ public class ProfileFragment extends Fragment {
         viewModel.getStatusMessage().observe(getViewLifecycleOwner(), message -> {
             if (message != null) {
                 Snackbar.make(binding.getRoot(), message, Snackbar.LENGTH_SHORT).show();
+                viewModel.clearStatusMessage();
             }
         });
 
