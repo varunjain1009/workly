@@ -33,7 +33,7 @@ public class JobAdapter extends ListAdapter<Job, JobAdapter.JobViewHolder> {
         @Override
         public boolean areContentsTheSame(@NonNull Job oldItem, @NonNull Job newItem) {
             return oldItem.getId() != null && oldItem.getId().equals(newItem.getId())
-                    && oldItem.getStatus() == newItem.getStatus()
+                    && oldItem.getStatus() != null && oldItem.getStatus().equals(newItem.getStatus())
                     && oldItem.getPreferredDateTime() == newItem.getPreferredDateTime();
         }
     };
