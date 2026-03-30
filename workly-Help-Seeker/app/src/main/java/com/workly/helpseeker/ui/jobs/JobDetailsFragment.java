@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import android.app.AlertDialog;
 
 import com.google.android.material.snackbar.Snackbar;
 
@@ -77,7 +78,14 @@ public class JobDetailsFragment extends Fragment {
         }
 
         binding.btnSubmitReview.setOnClickListener(v -> submitReview());
-        binding.btnCancel.setOnClickListener(v -> cancelJob());
+        binding.btnCancel.setOnClickListener(v -> {
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("Cancel Job")
+                    .setMessage("Are you sure you want to cancel this job?")
+                    .setPositiveButton("Yes", (dialog, which) -> cancelJob())
+                    .setNegativeButton("No", null)
+                    .show();
+        });
         binding.btnReschedule.setOnClickListener(v -> rescheduleJob());
     }
 

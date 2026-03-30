@@ -150,6 +150,14 @@
             android:text="Chat with Seeker"
             app:icon="@android:drawable/stat_notify_chat"
             app:iconGravity="textStart" />
+
+        <Button
+            android:id="@+id/btn_cancel_job"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Cancel Job"
+            android:backgroundTint="@android:color/holo_red_dark" />
             
     </LinearLayout>
 

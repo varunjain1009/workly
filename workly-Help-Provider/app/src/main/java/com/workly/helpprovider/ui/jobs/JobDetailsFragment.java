@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import android.app.AlertDialog;
 
 import com.google.android.material.snackbar.Snackbar;
 
@@ -73,6 +74,20 @@ public class JobDetailsFragment extends Fragment {
             }
         });
 
+        binding.btnCancelJob.setOnClickListener(v -> {
+            if (job != null) {
+                new AlertDialog.Builder(requireContext())
+                        .setTitle("Cancel Job")
+                        .setMessage("Are you sure you want to cancel this job?")
+                        .setPositiveButton("Yes", (dialog, which) -> {
+                            appLogger.d(TAG, "JobDetailsFragment(Provider): Canceling job: " + job.getId());
+                            viewModel.cancelJob(job.getId());
+                        })
+                        .setNegativeButton("No", null)
+                        .show();
+            }
+        });
+
         // specific observers for this fragment
         viewModel.getAcceptJobStatus().observe(getViewLifecycleOwner(), success -> {
             if (success) {
@@ -94,6 +109,17 @@ public class JobDetailsFragment extends Fragment {
                 }
             } else {
                 Snackbar.make(binding.getRoot(), "Failed to complete job. Invalid OTP?", Snackbar.LENGTH_LONG).show();
+            }
+        });
+
+        viewModel.getCancelJobStatus().observe(getViewLifecycleOwner(), success -> {
+            if (success) {
+                Snackbar.make(binding.getRoot(), "Job Cancelled Successfully!", Snackbar.LENGTH_SHORT).show();
+                if (getActivity() != null) {
+                    getActivity().onBackPressed();
+                }
+            } else {
+                Snackbar.make(binding.getRoot(), "Failed to cancel job", Snackbar.LENGTH_LONG).show();
             }
         });
     }

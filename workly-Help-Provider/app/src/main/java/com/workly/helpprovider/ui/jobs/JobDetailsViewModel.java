@@ -81,4 +81,34 @@ public class JobDetailsViewModel extends ViewModel {
                     }
                 });
     }
+
+    private final MutableLiveData<Boolean> cancelJobStatus = new MutableLiveData<>();
+
+    public LiveData<Boolean> getCancelJobStatus() {
+        return cancelJobStatus;
+    }
+
+    public void cancelJob(String jobId) {
+        appLogger.d(TAG, "JobDetailsViewModel(Provider): [ENTER] cancelJob - jobId: " + jobId);
+        jobRepository.cancelJob(jobId, new retrofit2.Callback<com.workly.helpprovider.data.remote.ApiResponse<Void>>() {
+            @Override
+            public void onResponse(retrofit2.Call<com.workly.helpprovider.data.remote.ApiResponse<Void>> call,
+                    retrofit2.Response<com.workly.helpprovider.data.remote.ApiResponse<Void>> response) {
+                if (response.isSuccessful()) {
+                    appLogger.d(TAG, "JobDetailsViewModel(Provider): Job " + jobId + " cancelled successfully");
+                    cancelJobStatus.setValue(true);
+                } else {
+                    appLogger.e(TAG, "JobDetailsViewModel(Provider): Cancel failed. Code: " + response.code());
+                    cancelJobStatus.setValue(false);
+                }
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<com.workly.helpprovider.data.remote.ApiResponse<Void>> call,
+                    Throwable t) {
+                appLogger.e(TAG, "JobDetailsViewModel(Provider): Network error cancelling job: " + t.getMessage(), t);
+                cancelJobStatus.setValue(false);
+            }
+        });
+    }
 }

@@ -14,6 +14,10 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
+import android.widget.ArrayAdapter;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import com.google.android.material.snackbar.Snackbar;
 
@@ -42,6 +46,7 @@ public class PostJobFragment extends Fragment {
     private static final String TAG = "WORKLY_DEBUG";
     private FragmentPostJobBinding binding;
     private JobViewModel jobViewModel;
+    private final Set<String> cachedSkills = new HashSet<>();
 
     @Inject
     ApiService apiService;
@@ -76,8 +81,69 @@ public class PostJobFragment extends Fragment {
         binding.etDate.setOnClickListener(v -> showDatePicker());
         binding.etTime.setOnClickListener(v -> showTimePicker());
 
-        binding.cgJobType.setEnabled(false); // Disable manual selection
+        binding.llDateTimeContainer.setVisibility(View.GONE);
+        binding.cgJobType.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            boolean isScheduled = !checkedIds.isEmpty() && checkedIds.get(0) == R.id.chip_scheduled;
+            binding.llDateTimeContainer.setVisibility(isScheduled ? View.VISIBLE : View.GONE);
+            validateFields();
+        });
+
         validateFields(); // Initial validation
+        setupSkillAutocomplete();
+    }
+
+    private void setupSkillAutocomplete() {
+        binding.etSkill.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (s == null || s.toString().trim().isEmpty()) return;
+                String query = s.toString().trim();
+                
+                // First check local cache
+                List<String> cachedSuggestions = new java.util.ArrayList<>();
+                for (String skill : cachedSkills) {
+                    if (skill.toLowerCase().contains(query.toLowerCase())) {
+                        cachedSuggestions.add(skill);
+                    }
+                }
+                
+                if (!cachedSuggestions.isEmpty()) {
+                    updateSkillAdapter(cachedSuggestions);
+                    return; // Skip network call if we have cached matches
+                }
+
+                // Call API
+                apiService.getSkillSuggestions(query).enqueue(new Callback<ApiResponse<List<String>>>() {
+                    @Override
+                    public void onResponse(Call<ApiResponse<List<String>>> call, Response<ApiResponse<List<String>>> response) {
+                        if (isAdded() && response.isSuccessful() && response.body() != null) {
+                            List<String> suggestions = response.body().getData();
+                            if (suggestions != null) {
+                                cachedSkills.addAll(suggestions);
+                                updateSkillAdapter(suggestions);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<ApiResponse<List<String>>> call, Throwable t) {
+                        appLogger.e(TAG, "Failed to load skill suggestions", t);
+                    }
+                });
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+    }
+
+    private void updateSkillAdapter(List<String> suggestions) {
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(),
+                android.R.layout.simple_dropdown_item_1line, suggestions);
+        binding.etSkill.setAdapter(adapter);
     }
 
     private void showDatePicker() {
@@ -128,32 +194,18 @@ public class PostJobFragment extends Fragment {
         String date = binding.etDate.getText().toString().trim();
         String time = binding.etTime.getText().toString().trim();
 
+        boolean isScheduled = binding.chipScheduled.isChecked();
         boolean hasDate = !date.isEmpty();
         boolean hasTime = !time.isEmpty();
 
-        // Reactive Job Type Logic
-        if (hasDate || hasTime) {
-            // At least one present: Force Scheduled (User is trying to schedule)
-            binding.chipScheduled.setChecked(true);
-            binding.chipImmediate.setEnabled(false);
-            binding.chipScheduled.setEnabled(false); // Read-only indication
-        } else {
-            // Both empty: Force Immediate
-            binding.chipImmediate.setChecked(true);
-            binding.chipImmediate.setEnabled(false);
-            binding.chipScheduled.setEnabled(false); // Read-only indication
-        }
-
         boolean isValid = !title.isEmpty() && !description.isEmpty() && !skill.isEmpty() && !radiusStr.isEmpty();
 
-        // Date and Time must be "all or nothing"
-        boolean timingValid = (hasDate && hasTime) || (!hasDate && !hasTime);
-
-        // Check scheduling constraints
-        if (hasDate && hasTime && !validateScheduling(date, time)) {
-            timingValid = false;
-            // Optional: Show toast or error on field (difficult in this method structure
-            // without spamming)
+        boolean timingValid = true;
+        if (isScheduled) {
+            timingValid = hasDate && hasTime;
+            if (timingValid && !validateScheduling(date, time)) {
+                timingValid = false;
+            }
         }
 
         isValid = isValid && timingValid;

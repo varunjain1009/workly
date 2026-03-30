@@ -105,6 +105,11 @@ public class JobRepository {
         apiService.completeJob(jobId, body).enqueue(callback);
     }
 
+    public void cancelJob(String jobId, Callback<ApiResponse<Void>> callback) {
+        appLogger.d(TAG, "JobRepository: Cancelling job: " + jobId);
+        apiService.updateJobStatus(jobId, "CANCELLED").enqueue(callback);
+    }
+
     private boolean isCacheFresh() {
         if (lastFetchTime == 0) return false;
         if (availableJobsData.getValue() == null) return false;

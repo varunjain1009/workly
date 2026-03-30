@@ -27,6 +27,9 @@ public interface ApiService {
     @retrofit2.http.PATCH("profiles/worker/availability")
     Call<ApiResponse<Void>> updateAvailability(@retrofit2.http.Query("available") boolean available);
 
+    @retrofit2.http.PATCH("jobs/{jobId}/status")
+    Call<ApiResponse<Void>> updateJobStatus(@retrofit2.http.Path("jobId") String jobId, @retrofit2.http.Query("status") String status);
+
     @POST("location/update")
     Call<Void> updateLocation(@Body Map<String, Double> location);
 

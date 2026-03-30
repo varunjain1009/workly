@@ -74,7 +74,11 @@ public class JobService {
                 .orElseThrow(() -> WorklyException.notFound("Job not found"));
 
         if (!job.getSeekerMobileNumber().equals(requestingUserMobile)) {
-            throw WorklyException.forbidden("You are not authorized to update this job");
+            if (status == JobStatus.CANCELLED && job.getWorkerMobileNumber() != null && job.getWorkerMobileNumber().equals(requestingUserMobile)) {
+                log.info("JobService: Assigned worker {} is cancelling job {}", requestingUserMobile, jobId);
+            } else {
+                throw WorklyException.forbidden("You are not authorized to update this job");
+            }
         }
 
         Set<JobStatus> allowedStatuses = VALID_TRANSITIONS.get(job.getStatus());
