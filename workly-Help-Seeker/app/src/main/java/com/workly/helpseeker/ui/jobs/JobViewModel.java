@@ -9,7 +9,9 @@ import com.workly.helpseeker.data.network.ApiResponse;
 import com.workly.helpseeker.data.network.ApiService;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -21,12 +23,19 @@ import retrofit2.Response;
 @HiltViewModel
 public class JobViewModel extends ViewModel {
 
+    private static final String TAG = "WORKLY_DEBUG";
+    private static final long STALENESS_THRESHOLD_MS = 60_000; // 60 seconds
+
     private final MutableLiveData<List<Job>> jobs = new MutableLiveData<>();
     private final MutableLiveData<Boolean> isLoading = new MutableLiveData<>(false);
     private final MutableLiveData<String> error = new MutableLiveData<>();
     private final ApiService apiService;
     private final com.workly.helpseeker.util.AppLogger appLogger;
-    private static final String TAG = "WORKLY_DEBUG";
+
+    // Per-type cache: "active" -> list, "past" -> list
+    private final Map<String, List<Job>> jobCache = new HashMap<>();
+    private final Map<String, Long> lastFetchTime = new HashMap<>();
+    private String currentType = "active";
 
     @Inject
     public JobViewModel(ApiService apiService, com.workly.helpseeker.util.AppLogger appLogger) {
@@ -47,36 +56,34 @@ public class JobViewModel extends ViewModel {
     }
 
     public void loadJobs(String type, boolean forceRefresh) {
-        appLogger.d(TAG, "Requesting jobs load. Type: " + type + " ForceRefresh: " + forceRefresh);
-        // Separate LiveData handling could be beneficial, but for now assuming
-        // Home/Past use different instances
-        // OR the Fragment is responsible for observing the right data.
-        // But here we only have one 'jobs' LiveData.
-        // If Home and Past share the ViewModel (Activity scope), they will overwrite
-        // each other.
+        currentType = type;
 
-        // HomeFragment uses 'requireActivity()' scope.
-        // If PastJobsFragment also uses 'requireActivity()', they share data.
-        // Changing tabs -> refresh.
-
-        if (!forceRefresh && jobs.getValue() != null && !jobs.getValue().isEmpty()) {
-            // This logic is flawed if checking different types.
-            // Simplified: Always fetch if type changes? Or just rely on forceRefresh.
-            // Failure-safe: if forceRefresh is false, we might return wrong data type.
-            // Let's assume the caller handles forceRefresh correctly or we just fetch.
+        // Check if we can serve from cache
+        if (!forceRefresh && isCacheFresh(type)) {
+            List<Job> cached = jobCache.get(type);
+            appLogger.d(TAG, "Serving " + type + " jobs from cache. Count: "
+                    + (cached != null ? cached.size() : 0)
+                    + " (age: " + getCacheAgeSeconds(type) + "s)");
+            jobs.setValue(cached);
+            return;
         }
 
-        // Better: always fetch if type is different?
-        // For MVP, just fetch.
-
+        appLogger.d(TAG, "Fetching " + type + " jobs from network."
+                + (forceRefresh ? " (forced)" : " (stale/missing)"));
         isLoading.setValue(true);
         apiService.getJobs(type).enqueue(new Callback<ApiResponse<List<Job>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<Job>>> call, Response<ApiResponse<List<Job>>> response) {
                 isLoading.setValue(false);
                 if (response.isSuccessful() && response.body() != null) {
-                    appLogger.d(TAG, "Successfully loaded jobs. Count: " + response.body().getData().size());
-                    jobs.setValue(response.body().getData());
+                    List<Job> data = response.body().getData();
+                    appLogger.d(TAG, "Successfully loaded " + type + " jobs. Count: " + data.size());
+                    jobCache.put(type, data);
+                    lastFetchTime.put(type, System.currentTimeMillis());
+                    // Only update LiveData if user is still viewing this type
+                    if (type.equals(currentType)) {
+                        jobs.setValue(data);
+                    }
                 } else {
                     appLogger.e(TAG, "Failed to load jobs. HTTP Status: " + response.code());
                     error.setValue("Failed to load jobs: " + response.code());
@@ -97,14 +104,42 @@ public class JobViewModel extends ViewModel {
     }
 
     public void addJobLocal(Job job) {
-        appLogger.d(TAG, "Locally caching and UI-prepending newly added Job: " + job.getTitle());
-        List<Job> currentJobs = jobs.getValue();
-        if (currentJobs == null) {
-            currentJobs = new ArrayList<>();
+        appLogger.d(TAG, "Locally adding new job to active cache: " + job.getTitle());
+        List<Job> activeJobs = jobCache.get("active");
+        if (activeJobs == null) {
+            activeJobs = new ArrayList<>();
         } else {
-            currentJobs = new ArrayList<>(currentJobs);
+            activeJobs = new ArrayList<>(activeJobs);
         }
-        currentJobs.add(0, job); // Add to top
-        jobs.setValue(currentJobs);
+        activeJobs.add(0, job); // Add to top
+        jobCache.put("active", activeJobs);
+        lastFetchTime.put("active", System.currentTimeMillis()); // Mark as fresh
+
+        // Update LiveData if currently viewing active jobs
+        if ("active".equals(currentType)) {
+            jobs.setValue(activeJobs);
+        }
+    }
+
+    /**
+     * Invalidate cache for a specific type, forcing next load to hit network.
+     */
+    public void invalidateCache(String type) {
+        lastFetchTime.remove(type);
+        jobCache.remove(type);
+    }
+
+    private boolean isCacheFresh(String type) {
+        Long fetchTime = lastFetchTime.get(type);
+        if (fetchTime == null) return false;
+        List<Job> cached = jobCache.get(type);
+        if (cached == null) return false;
+        return (System.currentTimeMillis() - fetchTime) < STALENESS_THRESHOLD_MS;
+    }
+
+    private long getCacheAgeSeconds(String type) {
+        Long fetchTime = lastFetchTime.get(type);
+        if (fetchTime == null) return -1;
+        return (System.currentTimeMillis() - fetchTime) / 1000;
     }
 }

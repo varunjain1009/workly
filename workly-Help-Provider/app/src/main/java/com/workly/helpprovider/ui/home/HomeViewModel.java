@@ -7,8 +7,6 @@ import androidx.lifecycle.ViewModel;
 import com.workly.helpprovider.data.repository.ProfileRepository;
 import com.workly.helpprovider.data.repository.JobRepository;
 
-import java.util.Map;
-
 import javax.inject.Inject;
 
 import dagger.hilt.android.lifecycle.HiltViewModel;
@@ -25,7 +23,6 @@ public class HomeViewModel extends ViewModel {
     private final JobRepository jobRepository;
     private final com.workly.helpprovider.util.AppLogger appLogger;
     private final MutableLiveData<Boolean> availabilityUpdated = new MutableLiveData<>();
-    private LiveData<java.util.List<com.workly.helpprovider.data.model.Job>> availableJobs;
     private static final String TAG = "WORKLY_DEBUG";
 
     @Inject
@@ -34,23 +31,27 @@ public class HomeViewModel extends ViewModel {
         this.jobRepository = jobRepository;
         this.appLogger = appLogger;
         appLogger.d(TAG, "HomeViewModel(Provider): Initialized");
+        // Trigger initial load (staleness-aware — won't duplicate if already fresh)
+        jobRepository.refreshAvailableJobs(false);
     }
 
     public LiveData<Boolean> getAvailabilityUpdated() {
         return availabilityUpdated;
     }
 
+    /**
+     * Returns persistent LiveData from repository — no new object created on each call.
+     */
     public LiveData<java.util.List<com.workly.helpprovider.data.model.Job>> getAvailableJobs() {
-        if (availableJobs == null) {
-            appLogger.d(TAG, "HomeViewModel(Provider): First-time fetch of available jobs");
-            availableJobs = jobRepository.getAvailableJobs();
-        }
-        return availableJobs;
+        return jobRepository.getAvailableJobs();
     }
 
+    /**
+     * Force-refreshes jobs from network, ignoring staleness.
+     */
     public void refreshJobs() {
         appLogger.d(TAG, "HomeViewModel(Provider): Force-refreshing available jobs");
-        availableJobs = jobRepository.getAvailableJobs();
+        jobRepository.refreshAvailableJobs(true);
     }
 
     public void setAvailability(boolean isAvailable) {
@@ -73,3 +74,4 @@ public class HomeViewModel extends ViewModel {
         });
     }
 }
+

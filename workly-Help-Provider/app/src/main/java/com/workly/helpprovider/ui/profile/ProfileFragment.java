@@ -14,9 +14,9 @@ import androidx.lifecycle.ViewModelProvider;
 import com.workly.helpprovider.data.model.Profile;
 import com.workly.helpprovider.databinding.FragmentProfileBinding;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.stream.Collectors;
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -96,9 +96,12 @@ public class ProfileFragment extends Fragment {
             currentProfile.setName(binding.etName.getText().toString());
             String skillsStr = binding.etSkills.getText().toString();
             if (!skillsStr.isEmpty()) {
-                currentProfile.setSkills(Arrays.stream(skillsStr.split(","))
-                        .map(String::trim)
-                        .collect(Collectors.toList()));
+                String[] parts = skillsStr.split(",");
+                List<String> skills = new ArrayList<>(parts.length);
+                for (String part : parts) {
+                    skills.add(part.trim());
+                }
+                currentProfile.setSkills(skills);
             } else {
                 currentProfile.setSkills(Collections.emptyList());
             }

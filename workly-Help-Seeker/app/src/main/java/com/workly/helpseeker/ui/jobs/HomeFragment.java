@@ -71,7 +71,8 @@ public class HomeFragment extends Fragment {
                     currentJobType = "past";
                     binding.tvEmptyState.setText("No past jobs found");
                 }
-                viewModel.loadJobs(currentJobType, true);
+                // Use cache if fresh — ViewModel decides whether to hit network
+                viewModel.loadJobs(currentJobType, false);
             }
         });
 
@@ -86,8 +87,9 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        // Let ViewModel's staleness threshold decide whether to fetch
         if (viewModel != null) {
-            viewModel.loadJobs(currentJobType, true);
+            viewModel.loadJobs(currentJobType, false);
         }
     }
 

@@ -55,14 +55,17 @@ public class ProfileViewModel extends ViewModel {
     }
 
     private final MutableLiveData<Double> averageRating = new MutableLiveData<>();
+    private boolean isRatingFetched = false;
 
     public LiveData<Double> getAverageRating() {
         return averageRating;
     }
 
     public void fetchAverageRating(String mobileNumber) {
-        if (mobileNumber == null)
+        if (mobileNumber == null || isRatingFetched) {
             return;
+        }
+
         appLogger.d(TAG, "ProfileViewModel(Provider): Fetching average rating for " + mobileNumber);
         profileRepository.getWorkerAverageRating(mobileNumber,
                 new retrofit2.Callback<com.workly.helpprovider.data.remote.ApiResponse<Double>>() {
@@ -72,6 +75,7 @@ public class ProfileViewModel extends ViewModel {
                         if (response.isSuccessful() && response.body() != null) {
                             appLogger.d(TAG, "ProfileViewModel(Provider): Average rating received: " + response.body().getData());
                             averageRating.setValue(response.body().getData());
+                            isRatingFetched = true;
                         }
                     }
 

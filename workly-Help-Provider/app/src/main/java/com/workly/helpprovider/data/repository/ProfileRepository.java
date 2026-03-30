@@ -21,6 +21,8 @@ public class ProfileRepository {
     private final ExecutorService executorService;
     private final com.workly.helpprovider.util.AppLogger appLogger;
     private static final String TAG = "WORKLY_DEBUG";
+    private static final long PROFILE_STALENESS_THRESHOLD_MS = 300_000; // 5 minutes
+    private long lastProfileFetchTime = 0;
 
     @Inject
     public ProfileRepository(ProfileDao profileDao, ApiService apiService, com.workly.helpprovider.util.AppLogger appLogger) {
@@ -31,8 +33,17 @@ public class ProfileRepository {
     }
 
     public LiveData<Profile> getProfile() {
-        refreshProfile();
+        if (!isProfileFresh()) {
+            refreshProfile();
+        } else {
+            appLogger.d(TAG, "ProfileRepository: Profile cache is fresh, serving from local DB skip network sync.");
+        }
         return profileDao.getProfile();
+    }
+
+    private boolean isProfileFresh() {
+        if (lastProfileFetchTime == 0) return false;
+        return (System.currentTimeMillis() - lastProfileFetchTime) < PROFILE_STALENESS_THRESHOLD_MS;
     }
 
     private void refreshProfile() {
@@ -55,6 +66,7 @@ public class ProfileRepository {
                         p.setExpertise(sb.toString());
                     }
                     executorService.execute(() -> profileDao.insertProfile(p));
+                    lastProfileFetchTime = System.currentTimeMillis();
                 }
             }
 
@@ -84,6 +96,7 @@ public class ProfileRepository {
                         p.setExpertise(sb.toString());
                     }
                     executorService.execute(() -> profileDao.insertProfile(p));
+                    lastProfileFetchTime = System.currentTimeMillis();
                 }
             }
 

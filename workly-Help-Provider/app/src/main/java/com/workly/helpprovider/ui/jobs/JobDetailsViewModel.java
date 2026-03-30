@@ -34,6 +34,7 @@ public class JobDetailsViewModel extends ViewModel {
                     retrofit2.Response<com.workly.helpprovider.data.remote.ApiResponse<Void>> response) {
                 if (response.isSuccessful()) {
                     appLogger.d(TAG, "JobDetailsViewModel(Provider): Job " + jobId + " accepted successfully");
+                    jobRepository.removeJobLocal(jobId);
                     acceptJobStatus.setValue(true);
                 } else {
                     appLogger.e(TAG, "JobDetailsViewModel(Provider): Accept failed. Code: " + response.code());

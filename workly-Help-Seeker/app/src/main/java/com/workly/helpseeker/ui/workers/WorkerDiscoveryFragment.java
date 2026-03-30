@@ -19,6 +19,7 @@ import com.workly.helpseeker.databinding.FragmentWorkerDiscoveryBinding;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.workly.helpseeker.ui.jobs.JobViewModel;
 import java.util.Properties;
 
 import javax.inject.Inject;
@@ -166,9 +167,12 @@ public class WorkerDiscoveryFragment extends Fragment {
                     Response<ApiResponse<com.workly.helpseeker.data.model.Job>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     Toast.makeText(getContext(), "Job Sent to " + worker.getName(), Toast.LENGTH_SHORT).show();
-                    // Navigate back to home or jobs list
-                    // We could also navigate to a status fragment
-                    requireActivity().onBackPressed(); // Or navigate to dashboard
+
+                    // Add to local ViewModel cache to avoid re-fetch on back navigation
+                    JobViewModel jobViewModel = new androidx.lifecycle.ViewModelProvider(requireActivity()).get(JobViewModel.class);
+                    jobViewModel.addJobLocal(response.body().getData());
+
+                    requireActivity().onBackPressed();
                 } else {
                     Toast.makeText(getContext(), "Failed to create job", Toast.LENGTH_SHORT).show();
                 }
