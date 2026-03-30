@@ -34,8 +34,6 @@ public class Profile implements Serializable {
     @SerializedName("hourlyRate")
     private double perHourCharges;
 
-    @SerializedName("availability_status")
-    private boolean availabilityStatus;
 
     @SerializedName("travelRadiusKm")
     private int travelRadius;
@@ -95,13 +93,6 @@ public class Profile implements Serializable {
         this.perHourCharges = perHourCharges;
     }
 
-    public boolean isAvailabilityStatus() {
-        return availabilityStatus;
-    }
-
-    public void setAvailabilityStatus(boolean availabilityStatus) {
-        this.availabilityStatus = availabilityStatus;
-    }
 
     public int getTravelRadius() {
         return travelRadius;

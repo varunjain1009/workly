@@ -39,6 +39,10 @@ public class HomeViewModel extends ViewModel {
         return availabilityUpdated;
     }
 
+    public LiveData<com.workly.helpprovider.data.model.Profile> getProfile() {
+        return profileRepository.getProfile();
+    }
+
     /**
      * Returns persistent LiveData from repository — no new object created on each call.
      */

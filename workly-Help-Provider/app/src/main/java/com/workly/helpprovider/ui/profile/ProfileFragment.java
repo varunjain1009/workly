@@ -59,7 +59,6 @@ public class ProfileFragment extends Fragment {
                 if (profile.getSkills() != null) {
                     binding.etSkills.setText(String.join(", ", profile.getSkills()));
                 }
-                binding.switchAvailability.setChecked(profile.isAvailable());
                 if (profile.getMobileNumber() != null) {
                     viewModel.fetchAverageRating(profile.getMobileNumber());
                 }
@@ -106,15 +105,10 @@ public class ProfileFragment extends Fragment {
                 currentProfile.setSkills(Collections.emptyList());
             }
 
-            // Availability is likely handled separately via switch, but let's sync it
-            currentProfile.setAvailable(binding.switchAvailability.isChecked());
-
             viewModel.updateProfile(currentProfile);
         });
 
-        binding.switchAvailability.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            viewModel.updateAvailability(isChecked);
-        });
+
     }
 
     @Override

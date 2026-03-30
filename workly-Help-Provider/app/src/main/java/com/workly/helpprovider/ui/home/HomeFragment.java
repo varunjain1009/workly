@@ -47,7 +47,7 @@ public class HomeFragment extends Fragment implements JobAdapter.OnJobClickListe
 
         setupRecyclerView();
         setupObservers();
-        setupListeners();
+        setupSwitchListener();
 
         binding.swipeRefresh.setOnRefreshListener(() -> viewModel.refreshJobs());
     }
@@ -80,9 +80,25 @@ public class HomeFragment extends Fragment implements JobAdapter.OnJobClickListe
                 Snackbar.make(binding.getRoot(), "Availability updated", Snackbar.LENGTH_SHORT).show();
             }
         });
+
+        viewModel.getProfile().observe(getViewLifecycleOwner(), profile -> {
+            if (profile != null) {
+                appLogger.d(TAG, "HomeFragment(Provider): Profile state loaded: " + profile.isAvailable());
+                binding.switchAvailability.setOnCheckedChangeListener(null);
+                binding.switchAvailability.setChecked(profile.isAvailable());
+                
+                if (profile.isAvailable()) {
+                    binding.tvStatusLabel.setText("Status: Available");
+                } else {
+                    binding.tvStatusLabel.setText("Status: Not Available");
+                }
+                
+                setupSwitchListener();
+            }
+        });
     }
 
-    private void setupListeners() {
+    private void setupSwitchListener() {
         binding.switchAvailability.setOnCheckedChangeListener((buttonView, isChecked) -> {
             appLogger.d(TAG, "HomeFragment(Provider): Availability toggled to: " + isChecked);
             viewModel.setAvailability(isChecked);

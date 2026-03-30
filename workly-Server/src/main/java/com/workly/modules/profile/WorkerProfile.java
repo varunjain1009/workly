@@ -10,9 +10,12 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Document(collection = "worker_profiles")
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class WorkerProfile extends MongoBaseEntity {
     @Id
     private String id;
