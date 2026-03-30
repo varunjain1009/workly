@@ -60,7 +60,7 @@ public class NetworkModule {
     @Provides
     @Singleton
     public Retrofit provideRetrofit(OkHttpClient okHttpClient, Properties properties) {
-        String baseUrl = properties.getProperty("backend.url", "https://api.workly.com/v1/");
+        String baseUrl = com.workly.helpseeker.BuildConfig.SERVER_URL;
         boolean debugEnabled = Boolean.parseBoolean(properties.getProperty("app.debug_enabled", "false"));
         if (debugEnabled)
             Log.d(TAG, "Initializing Retrofit with Base URL: " + baseUrl);

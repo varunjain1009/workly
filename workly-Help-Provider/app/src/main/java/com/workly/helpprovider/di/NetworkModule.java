@@ -60,7 +60,7 @@ public class NetworkModule {
     @Provides
     @Singleton
     public Retrofit provideRetrofit(OkHttpClient okHttpClient, Properties properties) {
-        String baseUrl = properties.getProperty("backend.url", "https://api.workly.com/v1/");
+        String baseUrl = com.workly.helpprovider.BuildConfig.SERVER_URL;
 
         return new Retrofit.Builder()
                 .baseUrl(baseUrl)
