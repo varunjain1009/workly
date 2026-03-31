@@ -19,7 +19,11 @@
         android:id="@+id/nav_my_jobs"
         android:name="com.workly.helpprovider.ui.jobs.MyJobsFragment"
         android:label="My Jobs"
-        tools:layout="@layout/fragment_my_jobs" />
+        tools:layout="@layout/fragment_my_jobs">
+        <action
+            android:id="@+id/action_my_jobs_to_jobDetails"
+            app:destination="@id/nav_job_details" />
+    </fragment>
 
     <fragment
         android:id="@+id/nav_profile"
@@ -35,5 +39,18 @@
         <argument
             android:name="job"
             app:argType="com.workly.helpprovider.data.model.Job" />
+        <action
+            android:id="@+id/action_job_details_to_chat"
+            app:destination="@id/nav_chat" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_chat"
+        android:name="com.workly.helpprovider.ui.chat.ChatFragment"
+        android:label="Chat"
+        tools:layout="@layout/fragment_chat">
+        <argument
+            android:name="otherUserId"
+            app:argType="string" />
     </fragment>
 </navigation>

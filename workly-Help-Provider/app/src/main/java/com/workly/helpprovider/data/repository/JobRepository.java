@@ -65,14 +65,19 @@ public class JobRepository {
     public void refreshAvailableJobs(boolean isManualPull) {
         long intervalMs = getThrottleIntervalMs();
         
-        // If the cache is still fresh based on our interval Config
-        if (isCacheFresh(intervalMs)) {
-            if (isManualPull) {
-                appLogger.d(TAG, "JobRepository: Throttled manual pull silently.");
-            } else {
-                appLogger.d(TAG, "JobRepository: Cache fresh, skipping background auto-refresh.");
+        if (isManualPull) {
+            // For manual pull, allow fetch unless it's within 10 seconds (spam prevention)
+            if (lastFetchTime > 0 && System.currentTimeMillis() - lastFetchTime < 10000) {
+                appLogger.d(TAG, "JobRepository: Throttled manual pull.");
+                throttleMessage.postValue("Refreshing too fast. Please wait a moment.");
+                return;
             }
-            return;
+        } else {
+            // If the cache is still fresh based on our interval Config for background automated fetches
+            if (isCacheFresh(intervalMs)) {
+                appLogger.d(TAG, "JobRepository: Cache fresh, skipping background auto-refresh.");
+                return;
+            }
         }
 
         appLogger.d(TAG, "JobRepository: Fetching available jobs from network."

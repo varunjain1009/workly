@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
 
 import com.google.android.material.snackbar.Snackbar;
 
@@ -123,27 +124,25 @@ public class JobDetailsFragment extends Fragment {
             binding.btnAcceptJob.setVisibility(View.GONE);
         }
 
-        // Show complete section if Accepted/Assigned
+        // Show complete + chat section if Accepted/Assigned
         if (job.getStatus() == JobStatus.ASSIGNED) {
             binding.llCompleteJob.setVisibility(View.VISIBLE);
-            // TODO: Re-enable chat when Job model has seekerId
-            // if (job.getSeekerId() != null) {
-            // binding.btnChatSeeker.setVisibility(View.VISIBLE);
-            // binding.btnChatSeeker.setOnClickListener(v -> startChat());
-            // }
+            if (job.getSeekerMobileNumber() != null) {
+                binding.btnChatSeeker.setVisibility(View.VISIBLE);
+                binding.btnChatSeeker.setOnClickListener(v -> startChat(job.getSeekerMobileNumber()));
+            } else {
+                binding.btnChatSeeker.setVisibility(View.GONE);
+            }
         }
     }
 
-    /*
-     * private void startChat() {
-     * Bundle bundle = new Bundle();
-     * // TODO: Fix - bundle.putString("otherUserId", job.getSeekerId());
-     * // TODO: Fix navigation
-     * //
-     * androidx.navigation.Navigation.findNavController(requireView()).navigate(com.
-     * workly.helpprovider.R.id.nav_chat, bundle);
-     * }
-     */
+    private void startChat(String seekerMobileNumber) {
+        appLogger.d(TAG, "JobDetailsFragment(Provider): Starting chat with seeker: " + seekerMobileNumber);
+        Bundle bundle = new Bundle();
+        bundle.putString("otherUserId", seekerMobileNumber);
+        Navigation.findNavController(requireView())
+                .navigate(com.workly.helpprovider.R.id.action_job_details_to_chat, bundle);
+    }
 
     @Override
     public void onDestroyView() {

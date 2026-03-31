@@ -31,8 +31,9 @@ public class HomeViewModel extends ViewModel {
         this.jobRepository = jobRepository;
         this.appLogger = appLogger;
         appLogger.d(TAG, "HomeViewModel(Provider): Initialized");
-        // Trigger initial load (staleness-aware — won't duplicate if already fresh)
-        jobRepository.refreshAvailableJobs(false);
+        // Force initial load regardless of general cache staleness
+        // (will still be subjected to 10-second spam throttle if recreated rapidly)
+        jobRepository.refreshAvailableJobs(true);
     }
 
     public LiveData<Boolean> getAvailabilityUpdated() {

@@ -18,6 +18,9 @@ public class Job implements Serializable {
     private Float minWorkerRating;
     private String preferredLanguage;
     private boolean toolsRequired;
+    private String seekerMobileNumber;
+    private String workerMobileNumber;
+    private String workerName;
 
     public Job() {
     }
@@ -155,5 +158,29 @@ public class Job implements Serializable {
 
     public void setToolsRequired(boolean toolsRequired) {
         this.toolsRequired = toolsRequired;
+    }
+
+    public String getSeekerMobileNumber() {
+        return seekerMobileNumber;
+    }
+
+    public void setSeekerMobileNumber(String seekerMobileNumber) {
+        this.seekerMobileNumber = seekerMobileNumber;
+    }
+
+    public String getWorkerMobileNumber() {
+        return workerMobileNumber;
+    }
+
+    public void setWorkerMobileNumber(String workerMobileNumber) {
+        this.workerMobileNumber = workerMobileNumber;
+    }
+
+    public String getWorkerName() {
+        return workerName;
+    }
+
+    public void setWorkerName(String workerName) {
+        this.workerName = workerName;
     }
 }

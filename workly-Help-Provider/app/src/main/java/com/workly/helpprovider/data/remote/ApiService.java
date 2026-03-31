@@ -33,6 +33,9 @@ public interface ApiService {
     @GET("jobs/available")
     Call<ApiResponse<java.util.List<com.workly.helpprovider.data.model.Job>>> getAvailableJobs();
 
+    @GET("jobs/worker")
+    Call<ApiResponse<java.util.List<com.workly.helpprovider.data.model.Job>>> getWorkerJobs();
+
     @POST("jobs/{jobId}/accept")
     Call<ApiResponse<Void>> acceptJob(@retrofit2.http.Path("jobId") String jobId);
 
