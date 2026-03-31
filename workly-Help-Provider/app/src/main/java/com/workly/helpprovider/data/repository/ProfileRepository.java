@@ -77,8 +77,13 @@ public class ProfileRepository {
                             }
                         }
                         p.setExpertise(sb.toString());
+                    } else {
+                        p.setExpertise("");
                     }
-                    executorService.execute(() -> profileDao.insertProfile(p));
+                    executorService.execute(() -> {
+                        profileDao.clearProfile();
+                        profileDao.insertProfile(p);
+                    });
                     prefs.edit().putLong("last_profile_fetch_time", System.currentTimeMillis()).apply();
                 }
             }
@@ -107,8 +112,13 @@ public class ProfileRepository {
                             }
                         }
                         p.setExpertise(sb.toString());
+                    } else {
+                        p.setExpertise("");
                     }
-                    executorService.execute(() -> profileDao.insertProfile(p));
+                    executorService.execute(() -> {
+                        profileDao.clearProfile();
+                        profileDao.insertProfile(p);
+                    });
                     prefs.edit().putLong("last_profile_fetch_time", System.currentTimeMillis()).apply();
                 }
             }

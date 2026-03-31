@@ -54,4 +54,7 @@ public interface ApiService {
 
     @POST("reviews")
     Call<ApiResponse<Void>> submitReview(@Body com.workly.helpprovider.data.remote.ReviewRequest request);
+
+    @GET("skills/autocomplete")
+    Call<java.util.List<String>> getSkillSuggestions(@retrofit2.http.Query("query") String query);
 }

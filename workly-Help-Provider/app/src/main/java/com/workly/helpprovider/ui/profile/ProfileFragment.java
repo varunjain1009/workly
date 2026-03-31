@@ -17,6 +17,17 @@ import com.workly.helpprovider.databinding.FragmentProfileBinding;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.widget.ArrayAdapter;
+import android.widget.MultiAutoCompleteTextView;
+
+import com.workly.helpprovider.data.remote.ApiService;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 import javax.inject.Inject;
 
@@ -29,6 +40,10 @@ public class ProfileFragment extends Fragment {
     private ProfileViewModel viewModel;
     private Profile currentProfile;
     private static final String TAG = "WORKLY_DEBUG";
+    private final Set<String> cachedSkills = new HashSet<>();
+
+    @Inject
+    ApiService apiService;
 
     @Inject
     com.workly.helpprovider.util.AppLogger appLogger;
@@ -43,11 +58,81 @@ public class ProfileFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        viewModel = new ViewModelProvider(this).get(ProfileViewModel.class);
+        viewModel = new ViewModelProvider(requireActivity()).get(ProfileViewModel.class);
         appLogger.d(TAG, "ProfileFragment(Provider): onViewCreated - ViewModel initialized");
 
         setupObservers();
         setupListeners();
+        setupSkillAutocomplete();
+    }
+
+    private void setupSkillAutocomplete() {
+        binding.etSkills.setTokenizer(new MultiAutoCompleteTextView.CommaTokenizer());
+        binding.etSkills.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (!binding.etSkills.hasFocus()) return;
+                
+                if (s == null || s.toString().trim().isEmpty()) return;
+                
+                // Get the current word being typed (after the last comma)
+                String[] parts = s.toString().split(",");
+                String query = parts[parts.length - 1].trim();
+                
+                if (query.isEmpty()) return;
+
+                // Check local cache first
+                List<String> cachedSuggestions = new ArrayList<>();
+                for (String skill : cachedSkills) {
+                    if (skill.toLowerCase().contains(query.toLowerCase())) {
+                        cachedSuggestions.add(skill);
+                    }
+                }
+
+                if (!cachedSuggestions.isEmpty()) {
+                    updateSkillAdapter(cachedSuggestions);
+                    return;
+                }
+
+                // Call API
+                apiService.getSkillSuggestions(query).enqueue(new Callback<List<String>>() {
+                    @Override
+                    public void onResponse(Call<List<String>> call, Response<List<String>> response) {
+                        if (isAdded() && response.isSuccessful() && response.body() != null) {
+                            List<String> suggestions = response.body();
+                            if (suggestions != null) {
+                                cachedSkills.addAll(suggestions);
+                                updateSkillAdapter(suggestions);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<List<String>> call, Throwable t) {
+                        appLogger.e(TAG, "Failed to load skill suggestions", t);
+                    }
+                });
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (s == null || s.toString().trim().isEmpty()) {
+                    binding.tilSkills.setHint("Skills (comma separated)");
+                } else {
+                    binding.tilSkills.setHint("Skills");
+                }
+            }
+        });
+    }
+
+    private void updateSkillAdapter(List<String> suggestions) {
+        if (getContext() == null) return;
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(),
+                android.R.layout.simple_dropdown_item_1line, suggestions);
+        binding.etSkills.setAdapter(adapter);
     }
 
     private void setupObservers() {
@@ -99,7 +184,10 @@ public class ProfileFragment extends Fragment {
                 String[] parts = skillsStr.split(",");
                 List<String> skills = new ArrayList<>(parts.length);
                 for (String part : parts) {
-                    skills.add(part.trim());
+                    String trimmed = part.trim();
+                    if (!trimmed.isEmpty()) {
+                        skills.add(trimmed);
+                    }
                 }
                 currentProfile.setSkills(skills);
             } else {

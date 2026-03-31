@@ -15,6 +15,7 @@ public class ProfileViewModel extends ViewModel {
     private final com.workly.helpprovider.util.AppLogger appLogger;
     private final MutableLiveData<String> statusMessage = new MutableLiveData<>();
     private final MutableLiveData<Boolean> isLoading = new MutableLiveData<>();
+    private LiveData<Profile> profileLiveData;
     private static final String TAG = "WORKLY_DEBUG";
 
     @Inject
@@ -25,7 +26,10 @@ public class ProfileViewModel extends ViewModel {
     }
 
     public LiveData<Profile> getProfile() {
-        return profileRepository.getProfile();
+        if (profileLiveData == null) {
+            profileLiveData = profileRepository.getProfile();
+        }
+        return profileLiveData;
     }
 
     public LiveData<String> getStatusMessage() {
@@ -43,15 +47,7 @@ public class ProfileViewModel extends ViewModel {
     public void updateProfile(Profile profile) {
         appLogger.d(TAG, "ProfileViewModel(Provider): [ENTER] updateProfile - name: " + profile.getName());
         isLoading.setValue(true);
-        if (profile.getExpertise() != null && !profile.getExpertise().trim().isEmpty()) {
-            java.util.List<String> skillsList = java.util.Arrays.asList(profile.getExpertise().split(","));
-            java.util.List<String> trimmedSkills = new java.util.ArrayList<>();
-            for (String s : skillsList) {
-                trimmedSkills.add(s.trim());
-            }
-            profile.setSkills(trimmedSkills);
-            appLogger.d(TAG, "ProfileViewModel(Provider): Parsed " + trimmedSkills.size() + " skills from expertise string");
-        }
+
         profileRepository.updateProfile(profile);
         isLoading.setValue(false);
         statusMessage.setValue("Profile updating...");

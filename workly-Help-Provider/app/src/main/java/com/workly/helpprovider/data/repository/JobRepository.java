@@ -68,14 +68,7 @@ public class JobRepository {
         // If the cache is still fresh based on our interval Config
         if (isCacheFresh(intervalMs)) {
             if (isManualPull) {
-                long ageSeconds = (System.currentTimeMillis() - lastFetchTime) / 1000;
-                long waitSeconds = (intervalMs / 1000) - ageSeconds;
-                long waitMinutes = waitSeconds / 60;
-                String msg = waitMinutes > 1
-                        ? "Please wait " + waitMinutes + " minutes before refreshing jobs."
-                        : "Please wait " + waitSeconds + " seconds before refreshing jobs.";
-                appLogger.d(TAG, "JobRepository: Throttled manual pull — " + msg);
-                throttleMessage.postValue(msg);
+                appLogger.d(TAG, "JobRepository: Throttled manual pull silently.");
             } else {
                 appLogger.d(TAG, "JobRepository: Cache fresh, skipping background auto-refresh.");
             }
