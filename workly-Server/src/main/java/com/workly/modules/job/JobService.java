@@ -223,7 +223,7 @@ public class JobService {
                 .status(job.getStatus())
                 .workerId(workerMobile)
                 .build();
-        saveOutboxEvent(JOB_TOPIC, event);
+        saveOutboxEvent("job.status.updated", event);
     }
 
     @Transactional
@@ -256,7 +256,7 @@ public class JobService {
                 .status(job.getStatus())
                 .workerId(requestingUserMobile)
                 .build();
-        saveOutboxEvent(JOB_TOPIC, event);
+        saveOutboxEvent("job.status.updated", event);
         
         log.debug("JobService: [EXIT] completeJob - Successfully marked ID {} as completed and pushed notification event.", jobId);
         return job; // Added return statement
