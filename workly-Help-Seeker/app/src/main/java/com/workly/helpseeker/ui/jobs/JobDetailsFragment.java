@@ -117,6 +117,20 @@ public class JobDetailsFragment extends Fragment {
             binding.cvOtp.setVisibility(View.VISIBLE);
             binding.tvOtp.setText(job.getCompletionOtp() != null ? job.getCompletionOtp() : "----");
 
+            if (job.getWorkerName() != null && !job.getWorkerName().isEmpty()) {
+                binding.tvWorkerName.setText(job.getWorkerName());
+                binding.tvWorkerName.setVisibility(View.VISIBLE);
+            } else {
+                binding.tvWorkerName.setVisibility(View.GONE);
+            }
+
+            if (job.getWorkerMobileNumber() != null && !job.getWorkerMobileNumber().isEmpty()) {
+                binding.tvWorkerPhone.setText("Phone: " + job.getWorkerMobileNumber());
+                binding.tvWorkerPhone.setVisibility(View.VISIBLE);
+            } else {
+                binding.tvWorkerPhone.setVisibility(View.GONE);
+            }
+
             if (job.getWorkerId() != null) {
                 binding.btnChat.setVisibility(View.VISIBLE);
                 binding.btnChat.setOnClickListener(v -> startChat());

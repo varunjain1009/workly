@@ -88,6 +88,35 @@ public class HomeFragment extends Fragment {
         });
     }
 
+    private android.content.BroadcastReceiver jobAcceptedReceiver = new android.content.BroadcastReceiver() {
+        @Override
+        public void onReceive(android.content.Context context, android.content.Intent intent) {
+            if ("JOB_ACCEPTED_EVENT".equals(intent.getAction())) {
+                appLogger.d(TAG, "HomeFragment(Seeker): JOB_ACCEPTED_EVENT received, refreshing active jobs");
+                if (viewModel != null) {
+                    viewModel.invalidateCache("active");
+                    if ("active".equals(currentJobType)) {
+                        viewModel.loadJobs("active", true);
+                    }
+                }
+            }
+        }
+    };
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(requireContext())
+                .registerReceiver(jobAcceptedReceiver, new android.content.IntentFilter("JOB_ACCEPTED_EVENT"));
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(requireContext())
+                .unregisterReceiver(jobAcceptedReceiver);
+    }
+
     @Override
     public void onResume() {
         super.onResume();

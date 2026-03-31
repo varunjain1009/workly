@@ -94,6 +94,22 @@
                     android:padding="24dp">
 
                     <TextView
+                        android:id="@+id/tv_worker_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textStyle="bold"
+                        android:textSize="18sp"
+                        android:layout_marginBottom="4dp"
+                        android:textColor="@color/black" />
+
+                    <TextView
+                        android:id="@+id/tv_worker_phone"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:textColor="@color/black" />
+
+                    <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Share this OTP with the worker to complete the job:"

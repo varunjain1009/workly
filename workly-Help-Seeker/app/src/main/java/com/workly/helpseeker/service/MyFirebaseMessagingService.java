@@ -37,12 +37,48 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             appLogger.d(TAG, "MyFirebaseMessagingService(Seeker): Data payload: " + remoteMessage.getData());
 
             String title = remoteMessage.getData().get("title");
-            if ("CONFIG_UPDATE".equals(title) || "CONFIG_UPDATE".equals(remoteMessage.getData().get("type"))) {
+            String type = remoteMessage.getData().get("type");
+            if ("CONFIG_UPDATE".equals(title) || "CONFIG_UPDATE".equals(type)) {
                 appLogger.d(TAG, "MyFirebaseMessagingService(Seeker): Config update received - triggering sync");
                 if (configManager != null) {
                     configManager.syncConfig();
                 }
+            } else if ("JOB_ACCEPTED".equals(type)) {
+                String jobId = remoteMessage.getData().get("jobId");
+                appLogger.d(TAG, "MyFirebaseMessagingService(Seeker): Job accepted push for jobId: " + jobId);
+                
+                // Show OS notification
+                sendNotification(title != null ? title : "Job Accepted", "Your job has been accepted by a provider", jobId);
+                
+                // Fire local broadcast
+                if (jobId != null) {
+                    android.content.Intent intent = new android.content.Intent("JOB_ACCEPTED_EVENT");
+                    intent.putExtra("jobId", jobId);
+                    androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                }
             }
+        }
+    }
+
+    private void sendNotification(String title, String message, String jobId) {
+        android.app.NotificationManager notificationManager = (android.app.NotificationManager) getSystemService(android.content.Context.NOTIFICATION_SERVICE);
+        String channelId = "workly_seeker_channel";
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            android.app.NotificationChannel channel = new android.app.NotificationChannel(channelId, "Job Updates", android.app.NotificationManager.IMPORTANCE_HIGH);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
+
+        androidx.core.app.NotificationCompat.Builder builder = new androidx.core.app.NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setAutoCancel(true)
+                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH);
+
+        if (notificationManager != null) {
+            notificationManager.notify(jobId != null ? jobId.hashCode() : 1001, builder.build());
         }
     }
 }

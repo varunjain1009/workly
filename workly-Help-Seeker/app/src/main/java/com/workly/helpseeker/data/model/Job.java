@@ -166,4 +166,23 @@ public class Job implements Serializable {
     public void setCompletionOtp(String completionOtp) {
         this.completionOtp = completionOtp;
     }
+
+    private String workerName;
+    private String workerMobileNumber;
+
+    public String getWorkerName() {
+        return workerName;
+    }
+
+    public void setWorkerName(String workerName) {
+        this.workerName = workerName;
+    }
+
+    public String getWorkerMobileNumber() {
+        return workerMobileNumber;
+    }
+
+    public void setWorkerMobileNumber(String workerMobileNumber) {
+        this.workerMobileNumber = workerMobileNumber;
+    }
 }
