@@ -198,7 +198,7 @@ public class JobService {
 
     public List<Job> getWorkerJobs(String mobileNumber) {
         log.debug("Fetching worker jobs from database for mobile: {}", mobileNumber);
-        List<Job> jobs = jobRepository.findByWorkerMobileNumber(mobileNumber);
+        List<Job> jobs = jobRepository.findByWorkerMobileNumberOrderByCreatedAtDesc(mobileNumber);
         if (jobs.isEmpty()) {
             log.info("No jobs found in database for worker mobile: {}", mobileNumber);
         } else {

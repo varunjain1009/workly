@@ -200,6 +200,17 @@ public class JobController {
         dto.setAppliedPromoCode(job.getAppliedPromoCode());
         dto.setDiscountAmount(job.getDiscountAmount());
 
+        // Identity fields
+        dto.setSeekerMobileNumber(job.getSeekerMobileNumber());
+        dto.setCompletionOtp(job.getCompletionOtp());
+
+        // Worker details — only populated after assignment
+        if (job.getWorkerMobileNumber() != null) {
+            dto.setWorkerMobileNumber(job.getWorkerMobileNumber());
+            profileService.getWorkerProfile(job.getWorkerMobileNumber()).ifPresent(wp ->
+                    dto.setWorkerName(wp.getName()));
+        }
+
         com.workly.modules.job.dto.LocationDTO locationDto = new com.workly.modules.job.dto.LocationDTO();
         locationDto.setAddress(job.getAddress());
         if (job.getLocation() != null && job.getLocation().length >= 2) {

@@ -9,6 +9,9 @@ public interface JobRepository extends MongoRepository<Job, String> {
 
     List<Job> findByWorkerMobileNumber(String mobileNumber);
 
+    /** Returns all jobs assigned to the given worker, newest first. */
+    List<Job> findByWorkerMobileNumberOrderByCreatedAtDesc(String mobileNumber);
+
     List<Job> findByStatus(JobStatus status);
 
     List<Job> findByStatusIn(List<JobStatus> statuses);

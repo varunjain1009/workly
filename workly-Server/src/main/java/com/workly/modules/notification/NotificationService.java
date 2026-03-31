@@ -14,6 +14,8 @@ public class NotificationService {
     // private final FcmTokenRepository fcmTokenRepository;
     private final com.workly.modules.job.JobRepository jobRepository;
     private final com.workly.modules.matching.MatchingService matchingService;
+    private final com.workly.modules.notification.service.FCMService fcmService;
+    private final com.workly.modules.notification.service.UserTokenService userTokenService;
 
     @KafkaListener(topics = "job.created", groupId = "notification-group")
     public void handleJobCreated(JobEvent event) {
@@ -134,9 +136,53 @@ public class NotificationService {
     @KafkaListener(topics = "job.status.updated", groupId = "notification-group")
     public void handleJobStatusUpdated(JobEvent event) {
         log.debug("NotificationService: [ENTER] handleJobStatusUpdated - jobId: {}, newStatus: {}", event.getJobId(), event.getStatus());
-        log.info("Received job.status.updated event for jobId: {} with status: {}", event.getJobId(),
-                event.getStatus());
-        log.debug("NotificationService: [EXIT] handleJobStatusUpdated - Status change notification pending implementation");
+        log.info("Received job.status.updated event for jobId: {} with status: {}", event.getJobId(), event.getStatus());
+
+        com.workly.modules.job.Job job = jobRepository.findById(event.getJobId()).orElse(null);
+        if (job == null) {
+            log.error("NotificationService: Job {} not found for status-update notification", event.getJobId());
+            return;
+        }
+
+        if (event.getStatus() == com.workly.modules.job.JobStatus.ASSIGNED) {
+            // Notify the seeker that their job has been accepted by a provider
+            String seekerToken = userTokenService.getToken(job.getSeekerMobileNumber());
+            if (seekerToken != null) {
+                java.util.Map<String, String> data = new java.util.HashMap<>();
+                data.put("jobId", job.getId());
+                data.put("type", "JOB_ACCEPTED");
+                fcmService.sendNotificationWithData(seekerToken, "Job Accepted",
+                        "A provider has accepted your job: " + job.getTitle(), data);
+                log.info("NotificationService: Sent JOB_ACCEPTED push to seeker {}", job.getSeekerMobileNumber());
+            } else {
+                log.warn("NotificationService: No FCM token for seeker {}, skipping push", job.getSeekerMobileNumber());
+            }
+
+            // Notify the assigned worker as confirmation
+            String workerToken = userTokenService.getToken(job.getWorkerMobileNumber());
+            if (workerToken != null) {
+                java.util.Map<String, String> workerData = new java.util.HashMap<>();
+                workerData.put("jobId", job.getId());
+                workerData.put("type", "JOB_ASSIGNED");
+                fcmService.sendNotificationWithData(workerToken, "Job Confirmed",
+                        "You have been assigned to: " + job.getTitle(), workerData);
+                log.info("NotificationService: Sent JOB_ASSIGNED push to worker {}", job.getWorkerMobileNumber());
+            }
+
+        } else if (event.getStatus() == com.workly.modules.job.JobStatus.COMPLETED) {
+            // Notify the seeker the job is done
+            String seekerToken = userTokenService.getToken(job.getSeekerMobileNumber());
+            if (seekerToken != null) {
+                java.util.Map<String, String> data = new java.util.HashMap<>();
+                data.put("jobId", job.getId());
+                data.put("type", "JOB_COMPLETED");
+                fcmService.sendNotificationWithData(seekerToken, "Job Completed",
+                        "Your job has been completed: " + job.getTitle(), data);
+                log.info("NotificationService: Sent JOB_COMPLETED push to seeker {}", job.getSeekerMobileNumber());
+            }
+        }
+
+        log.debug("NotificationService: [EXIT] handleJobStatusUpdated");
     }
 
     private void sendPushNotification(String topicOrToken, String title, String body) {

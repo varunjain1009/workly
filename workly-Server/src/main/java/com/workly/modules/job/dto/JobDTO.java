@@ -25,8 +25,14 @@ public class JobDTO {
     private boolean immediate;
     private Double penaltyAmount;
     private String cancellationReason;
-    
+
     // Promotions
     private String appliedPromoCode;
     private double discountAmount;
+
+    // Assigned job details
+    private String completionOtp;
+    private String workerMobileNumber;
+    private String workerName;
+    private String seekerMobileNumber;
 }
