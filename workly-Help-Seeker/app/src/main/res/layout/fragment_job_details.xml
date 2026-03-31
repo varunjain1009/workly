@@ -40,6 +40,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
+                android:textColor="@color/black"
                 android:textSize="16sp" />
 
             <TextView
@@ -61,6 +62,7 @@
                 android:layout_marginTop="16dp"
                 android:drawablePadding="8dp"
                 android:gravity="center_vertical"
+                android:textColor="@color/black"
                 android:textSize="16sp"
                 android:visibility="gone"
                 app:drawableStartCompat="@android:drawable/ic_menu_my_calendar" />
@@ -148,6 +150,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Rate your experience"
+                    android:textColor="@color/black"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
@@ -172,7 +175,8 @@
                         android:id="@+id/et_comment"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:minLines="3" />
+                        android:minLines="3"
+                        android:textColor="@color/black" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.button.MaterialButton

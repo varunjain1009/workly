@@ -39,11 +39,20 @@ public class LoginActivity extends AppCompatActivity {
 
         viewModel = new ViewModelProvider(this).get(LoginViewModel.class);
 
-        // Fetch config
+        // Disable UI and show overlay until config is loaded
+        binding.btnSendOtp.setEnabled(false);
+        binding.loadingOverlay.setVisibility(View.VISIBLE);
+
+        appLogger.d(TAG, "LoginActivity started. No saved session — showing login fields.");
+        binding.btnSendOtp.setText("READY - ENTER PHONE");
+        binding.getRoot().setBackgroundColor(android.graphics.Color.LTGRAY);
+
         configManager.fetchConfig();
-        // Ideally observe or wait, but similar to Seeker app, we just trigger it.
-        // We will update local delay variable if config is ready when needed or check
-        // accessor.
+        configManager.getOnConfigLoaded().observe(this, config -> {
+            appLogger.d(TAG, "Config loaded, enabling UI.");
+            binding.loadingOverlay.setVisibility(View.GONE);
+            binding.btnSendOtp.setEnabled(binding.etPhone.getText().length() == 10);
+        });
 
         setupListeners();
         observeViewModel();
@@ -106,7 +115,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private void observeViewModel() {
         viewModel.getIsLoading().observe(this, isLoading -> {
-            // TODO: Add progressBar to layout - binding.progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+            binding.loadingOverlay.setVisibility(isLoading ? View.VISIBLE : View.GONE);
             binding.btnSendOtp.setEnabled(!isLoading && binding.etPhone.getText().toString().matches("\\d{10}"));
             binding.btnVerifyOtp.setEnabled(!isLoading && binding.etOtp.getText().toString().matches("\\d{4}"));
         });

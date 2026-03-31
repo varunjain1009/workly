@@ -153,7 +153,7 @@ If you are testing from a physical Android Device, ensure your host machine IP (
 - `application.yml`
 - Android App's `NetworkClient.java` or `strings.xml`.
 
-If testing on the **Android Emulator**, use the specialized localhost bridge: `10.0.2.2`.
+If testing on the **Android Emulator**, use the specialized localhost bridge: `192.168.31.112`.
 
 ## 📖 Documentation
 *   **[Product Roadmap](PRODUCT_ROADMAP.md)**: Upcoming features and critical functionality gaps.

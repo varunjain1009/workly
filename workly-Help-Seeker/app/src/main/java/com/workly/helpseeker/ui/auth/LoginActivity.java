@@ -59,26 +59,29 @@ public class LoginActivity extends AppCompatActivity {
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // Disable UI until config is loaded
+        // Disable UI and show overlay until config is loaded
         binding.btnSendOtp.setEnabled(false);
-        // Show loading if needed, or just wait locally
+        binding.loadingOverlay.setVisibility(View.VISIBLE);
 
         configManager.fetchConfig();
-        // Give it a moment or update UI when config is ready?
-        // For simplicity, we assume network is fast or defaults are used.
-        // But better is to observe. ConfigManager assumes a simple fetch.
-        // We will delay slightly or just proceed with defaults if not ready.
-        // Ideally we should have a callback/observable.
-        // Let's modify ConfigManager to accept a callback or use LiveData?
-        // Keeping it simple: We trigger fetch here. We use values if available.
-
-        // Give it a moment or update UI when config is ready?
-        // Let's make ConfigManager have a callback for "onFetchComplete"
+        configManager.getOnConfigLoaded().observe(this, config -> {
+            appLogger.d(TAG, "Config loaded, enabling UI.");
+            binding.loadingOverlay.setVisibility(View.GONE);
+            binding.btnSendOtp.setEnabled(binding.etPhone.getText().length() == 10);
+        });
 
         resendDelayMs = Long.parseLong(properties.getProperty("auth.otp.resend_delay_seconds", "300")) * 1000;
 
-        if (authManager.isLoggedIn()) {
+        appLogger.d(TAG, "Checking Auto-Login status...");
+        boolean loggedIn = authManager.isLoggedIn();
+        appLogger.d(TAG, "isLoggedIn: " + loggedIn);
+
+        if (loggedIn) {
             performAutoLogin();
+        } else {
+            appLogger.d(TAG, "Not logged in. UI should be showing Login fields.");
+            binding.btnSendOtp.setText("READY - ENTER PHONE");
+            binding.getRoot().setBackgroundColor(android.graphics.Color.LTGRAY);
         }
 
         binding.etPhone.addTextChangedListener(new TextWatcher() {
@@ -198,12 +201,14 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void performAutoLogin() {
-        appLogger.d(TAG, "Attempting auto-login with existing token...");
+        appLogger.d(TAG, "Auto-login started. If the screen is stuck here, check network/timeout.");
+        binding.progressBar.setVisibility(View.VISIBLE);
 
-        // Show progress or splash-like state if needed, here we just call the API
         apiService.refresh().enqueue(new Callback<ApiResponse<AuthResponse>>() {
             @Override
             public void onResponse(Call<ApiResponse<AuthResponse>> call, Response<ApiResponse<AuthResponse>> response) {
+                if (isFinishing() || isDestroyed()) return;
+                binding.progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful() && response.body() != null) {
                     appLogger.d(TAG, "Auto-login successful! Token refreshed.");
                     authManager.saveToken(response.body().getData().getToken());
@@ -212,15 +217,15 @@ public class LoginActivity extends AppCompatActivity {
                 } else {
                     appLogger.w(TAG, "Auto-login failed. Token may be expired.");
                     authManager.clearToken();
-                    // Stay on login screen
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<AuthResponse>> call, Throwable t) {
-                appLogger.e(TAG, "Network error during auto-login: " + t.getMessage());
-                // In case of network error, we might want to let user retry manually or stay on
-                // login
+                if (isFinishing() || isDestroyed()) return;
+                binding.progressBar.setVisibility(View.GONE);
+                appLogger.e(TAG, "Auto-login failed: " + t.getMessage());
+                authManager.clearToken();
             }
         });
     }

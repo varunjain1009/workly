@@ -82,8 +82,8 @@ public class AvailabilityService extends Service implements LocationHelper.OnLoc
     @Override
     public void onLocationUpdate(Location location) {
         Map<String, Double> locData = new HashMap<>();
-        locData.put("lat", location.getLatitude());
-        locData.put("lng", location.getLongitude());
+        locData.put("latitude", location.getLatitude());
+        locData.put("longitude", location.getLongitude());
 
         apiService.updateLocation(locData).enqueue(new Callback<Void>() {
             @Override

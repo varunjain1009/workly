@@ -34,7 +34,7 @@ public class ConfigDataSeeder implements CommandLineRunner {
         seed("custom.monetisation.enabled", "false");
         seed("custom.monetisation.model", "PER_JOB");
         seed("custom.monetisation.allow-browse-without-payment", "true");
-        seed("custom.chat.url", "ws://10.0.2.2:8082/ws/chat");
+        seed("custom.chat.url", "ws://192.168.31.112:8082/ws/chat");
 
         log.info("Configuration seeding completed.");
     }

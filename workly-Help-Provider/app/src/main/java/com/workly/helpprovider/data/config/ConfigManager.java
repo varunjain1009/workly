@@ -1,6 +1,8 @@
 package com.workly.helpprovider.data.config;
 
 import android.util.Log;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 import com.workly.helpprovider.data.model.ConfigResponse;
 import com.workly.helpprovider.data.remote.ApiService;
 import com.workly.helpprovider.data.remote.ApiResponse;
@@ -18,6 +20,7 @@ public class ConfigManager {
     private final ApiService apiService;
     private ConfigResponse cachedConfig;
     private final AppLogger appLogger;
+    private final MutableLiveData<ConfigResponse> onConfigLoaded = new MutableLiveData<>();
 
     @Inject
     public ConfigManager(ApiService apiService, AppLogger appLogger) {
@@ -32,12 +35,17 @@ public class ConfigManager {
                 if (response.isSuccessful() && response.body() != null) {
                     cachedConfig = response.body().getData();
                     appLogger.d(TAG, "Config fetched successfully");
+                    onConfigLoaded.postValue(cachedConfig);
+                } else {
+                    appLogger.e(TAG, "Failed to fetch config. Status: " + response.code());
+                    onConfigLoaded.postValue(null);
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<ConfigResponse>> call, Throwable t) {
                 appLogger.e(TAG, "Failed to fetch config", t);
+                onConfigLoaded.postValue(null);
             }
         });
     }
@@ -49,5 +57,9 @@ public class ConfigManager {
 
     public ConfigResponse getConfig() {
         return cachedConfig;
+    }
+
+    public LiveData<ConfigResponse> getOnConfigLoaded() {
+        return onConfigLoaded;
     }
 }

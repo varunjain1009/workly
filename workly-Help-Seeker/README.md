@@ -43,8 +43,8 @@ The app's backend URL and features are managed via:
 `app/src/main/assets/config.properties`
 
 ```properties
-backend.url=http://10.0.2.2:8080/api/v1/
-chat.url=ws://10.0.2.2:8082/ws/chat
+backend.url=http://192.168.31.112:8080/api/v1/
+chat.url=ws://192.168.31.112:8082/ws/chat
 job.max-radius-km=100
 assignment.mode=FIRST_ACCEPT
 monetisation.enabled=true

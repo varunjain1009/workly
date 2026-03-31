@@ -41,7 +41,7 @@ public class ConfigController {
     @Value("${custom.monetisation.allow-browse-without-payment:true}")
     private boolean allowBrowseWithoutPayment;
 
-    @Value("${custom.chat.url:ws://10.0.2.2:8082/ws/chat}")
+    @Value("${custom.chat.url:ws://192.168.31.112:8082/ws/chat}")
     private String chatUrl;
 
     @Value("${custom.job.refresh-interval-minutes:5}")
@@ -52,7 +52,8 @@ public class ConfigController {
 
     @GetMapping("/public")
     public ApiResponse<Map<String, Object>> getPublicConfig() {
-        log.debug("ConfigController: [ENTER] getPublicConfig - assignmentMode: {}, jobMaxRadiusKm: {}, monetisationEnabled: {}",
+        log.debug(
+                "ConfigController: [ENTER] getPublicConfig - assignmentMode: {}, jobMaxRadiusKm: {}, monetisationEnabled: {}",
                 assignmentMode, jobMaxRadiusKm, monetisationEnabled);
         Map<String, Object> config = Map.of(
                 "locationUpdateIntervalMinutes", locationUpdateIntervalMinutes,

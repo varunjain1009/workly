@@ -1,5 +1,7 @@
 package com.workly.helpseeker.data.config;
 
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 import com.workly.helpseeker.data.model.ConfigResponse;
 import com.workly.helpseeker.data.network.ApiService;
 import com.workly.helpseeker.data.network.ApiResponse;
@@ -16,6 +18,7 @@ public class ConfigManager {
     private final ApiService apiService;
     private ConfigResponse cachedConfig;
     private final com.workly.helpseeker.util.AppLogger appLogger;
+    private final MutableLiveData<ConfigResponse> onConfigLoaded = new MutableLiveData<>();
 
     @Inject
     public ConfigManager(ApiService apiService, com.workly.helpseeker.util.AppLogger appLogger) {
@@ -31,14 +34,17 @@ public class ConfigManager {
                 if (response.isSuccessful() && response.body() != null) {
                     cachedConfig = response.body().getData();
                     appLogger.d(TAG, "ConfigManager: Successfully resolved and cached remote configuration payload.");
+                    onConfigLoaded.postValue(cachedConfig);
                 } else {
                     appLogger.e(TAG, "ConfigManager: Failed resolving remote config. Status code: " + response.code());
+                    onConfigLoaded.postValue(null);
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<ConfigResponse>> call, Throwable t) {
                 appLogger.e(TAG, "ConfigManager: Network transport error during config sync: " + t.getMessage(), t);
+                onConfigLoaded.postValue(null);
             }
         });
     }
@@ -50,5 +56,9 @@ public class ConfigManager {
 
     public ConfigResponse getConfig() {
         return cachedConfig;
+    }
+
+    public LiveData<ConfigResponse> getOnConfigLoaded() {
+        return onConfigLoaded;
     }
 }

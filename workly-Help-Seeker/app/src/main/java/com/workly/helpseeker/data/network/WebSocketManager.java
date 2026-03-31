@@ -33,7 +33,7 @@ public class WebSocketManager {
 
     @Inject
     public WebSocketManager(Properties properties, AppLogger appLogger) {
-        this.wsUrl = properties.getProperty("chat.url", "ws://10.0.2.2:8082/ws/chat");
+        this.wsUrl = properties.getProperty("chat.url", "ws://192.168.31.112:8082/ws/chat");
         this.appLogger = appLogger;
         client = new OkHttpClient.Builder()
                 .readTimeout(0, TimeUnit.MILLISECONDS)

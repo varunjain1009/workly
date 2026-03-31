@@ -1,5 +1,7 @@
 package com.workly.helpprovider.ui.home;
 
+import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -116,10 +118,17 @@ public class HomeFragment extends Fragment implements JobAdapter.OnJobClickListe
             if (!buttonView.isPressed()) return; // Block programmatic triggers
             appLogger.d(TAG, "HomeFragment(Provider): Availability toggled to: " + isChecked);
             viewModel.setAvailability(isChecked);
+            Intent serviceIntent = new Intent(requireContext(), com.workly.helpprovider.service.AvailabilityService.class);
             if (isChecked) {
                 binding.tvStatusLabel.setText("Status: Available");
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    requireActivity().startForegroundService(serviceIntent);
+                } else {
+                    requireActivity().startService(serviceIntent);
+                }
             } else {
                 binding.tvStatusLabel.setText("Status: Not Available");
+                requireActivity().stopService(serviceIntent);
             }
         });
     }

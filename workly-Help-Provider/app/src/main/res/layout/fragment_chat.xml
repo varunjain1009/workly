@@ -25,6 +25,7 @@
             android:layout_weight="1"
             android:hint="Type a message"
             android:padding="12dp"
+            android:textColor="@color/black"
             android:background="@android:color/white"/>
 
         <Button

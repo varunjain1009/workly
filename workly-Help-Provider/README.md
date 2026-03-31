@@ -20,8 +20,8 @@ Output: `app/build/outputs/apk/release/app-release.apk`
 Manage environment settings in `app/src/main/assets/config.properties`.
 
 ```properties
-api.base_url=http://10.0.2.2:8080/api/v1/
-chat.url=ws://10.0.2.2:8082/ws/chat
+api.base_url=http://192.168.31.112:8080/api/v1/
+chat.url=ws://192.168.31.112:8082/ws/chat
 app.debug_enabled=true
 auth.otp.resend_delay_seconds=300
 ```

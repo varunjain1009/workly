@@ -1,7 +1,9 @@
 package com.workly.modules.profile;
 
 import lombok.RequiredArgsConstructor;
+import com.workly.modules.notification.NotificationService;
 import com.workly.modules.search.SearchServiceClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +19,9 @@ public class ProfileService {
     private final WorkerProfileRepository workerRepository;
     private final SkillSeekerProfileRepository seekerRepository;
     private final SearchServiceClient searchServiceClient;
+
+    @Autowired
+    private NotificationService notificationService;
 
     public WorkerProfile createOrUpdateWorkerProfile(WorkerProfile profile) {
         log.debug("ProfileService: [ENTER] createOrUpdateWorkerProfile - Mobile: {}", profile.getMobileNumber());
@@ -77,6 +82,10 @@ public class ProfileService {
         getWorkerProfile(mobileNumber).ifPresent(p -> {
             p.setAvailable(available);
             workerRepository.save(p);
+            if (available) {
+                log.debug("ProfileService: Worker {} became available — triggering re-notification scan", mobileNumber);
+                notificationService.notifyNewlyAvailableWorker(p);
+            }
         });
     }
 
