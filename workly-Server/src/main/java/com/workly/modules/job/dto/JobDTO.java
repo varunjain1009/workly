@@ -4,10 +4,12 @@ import com.workly.modules.job.AssignmentMode;
 import com.workly.modules.job.JobStatus;
 import com.workly.modules.job.JobType;
 import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.List;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class JobDTO {
     private String id;
     private String title;

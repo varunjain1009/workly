@@ -99,11 +99,12 @@ class JobServiceTest {
     void getWorkerJobs_ShouldReturnJobs() {
         String mobile = "123";
         Job job = new Job();
-        when(jobRepository.findByWorkerMobileNumber(mobile)).thenReturn(Collections.singletonList(job));
+        when(jobRepository.findByWorkerMobileNumberOrderByCreatedAtDesc(eq(mobile), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(Collections.singletonList(job));
 
         List<Job> result = jobService.getWorkerJobs(mobile);
 
         assertEquals(1, result.size());
-        verify(jobRepository).findByWorkerMobileNumber(mobile);
+        verify(jobRepository).findByWorkerMobileNumberOrderByCreatedAtDesc(eq(mobile), any(org.springframework.data.domain.Pageable.class));
     }
 }

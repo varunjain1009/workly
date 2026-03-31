@@ -164,7 +164,12 @@ public class JobService {
     }
 
     public List<Job> getSeekerJobs(String mobileNumber, String type) {
-        log.debug("JobService: [ENTER] getSeekerJobs - Fetching snapshot queries for mobile: {}, type: {}", mobileNumber, type);
+        return getSeekerJobs(mobileNumber, type, 0, 50);
+    }
+
+    public List<Job> getSeekerJobs(String mobileNumber, String type, int page, int size) {
+        log.debug("JobService: [ENTER] getSeekerJobs - mobile: {}, type: {}, page: {}, size: {}", mobileNumber, type, page, size);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
         List<Job> jobs;
 
         if ("active".equalsIgnoreCase(type)) {
@@ -174,43 +179,77 @@ public class JobService {
                     JobStatus.SCHEDULED,
                     JobStatus.PENDING_ACCEPTANCE,
                     JobStatus.ASSIGNED);
-            jobs = jobRepository.findBySeekerMobileNumberAndStatusIn(mobileNumber, activeStatuses);
+            jobs = jobRepository.findBySeekerMobileNumberAndStatusIn(mobileNumber, activeStatuses, pageable);
         } else if ("past".equalsIgnoreCase(type)) {
             List<JobStatus> pastStatuses = List.of(
                     JobStatus.COMPLETED,
                     JobStatus.CANCELLED,
                     JobStatus.EXPIRED);
-            jobs = jobRepository.findBySeekerMobileNumberAndStatusIn(mobileNumber, pastStatuses);
+            jobs = jobRepository.findBySeekerMobileNumberAndStatusIn(mobileNumber, pastStatuses, pageable);
         } else {
             jobs = jobRepository.findBySeekerMobileNumber(mobileNumber);
         }
 
-        if (jobs.isEmpty()) {
-            log.info("No {} jobs found in database for seeker mobile: {}", type != null ? type : "all", mobileNumber);
-        } else {
-            log.info("Found {} {} jobs in database for seeker mobile: {}", jobs.size(), type != null ? type : "all",
-                    mobileNumber);
-        }
-        
-        log.debug("JobService: [EXIT] getSeekerJobs - Successfully resolved collection sizing at {}", jobs.size());
+        log.info("Found {} {} jobs for seeker mobile: {}", jobs.size(), type != null ? type : "all", mobileNumber);
+        log.debug("JobService: [EXIT] getSeekerJobs - collection size: {}", jobs.size());
         return jobs;
     }
 
     public List<Job> getWorkerJobs(String mobileNumber) {
-        log.debug("Fetching worker jobs from database for mobile: {}", mobileNumber);
-        List<Job> jobs = jobRepository.findByWorkerMobileNumberOrderByCreatedAtDesc(mobileNumber);
-        if (jobs.isEmpty()) {
-            log.info("No jobs found in database for worker mobile: {}", mobileNumber);
-        } else {
-            log.info("Found {} jobs in database for worker mobile: {}", jobs.size(), mobileNumber);
-        }
+        return getWorkerJobs(mobileNumber, 0, 50);
+    }
+
+    public List<Job> getWorkerJobs(String mobileNumber, int page, int size) {
+        log.debug("Fetching worker jobs - mobile: {}, page: {}, size: {}", mobileNumber, page, size);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        List<Job> jobs = jobRepository.findByWorkerMobileNumberOrderByCreatedAtDesc(mobileNumber, pageable);
+        log.info("Found {} jobs for worker mobile: {}", jobs.size(), mobileNumber);
         return jobs;
     }
 
+    /**
+     * Returns available jobs filtered by the worker's geo-location and skills.
+     * Falls back to a wider geo-only search if the worker has no skills set.
+     * Results are paginated (default 20 per page).
+     */
     public List<Job> getMatchingJobs(String workerMobile) {
-        // For now, return all BROADCASTED and SCHEDULED jobs.
-        // Todo: Add skill and location filtering.
-        return jobRepository.findByStatusIn(List.of(JobStatus.BROADCASTED, JobStatus.SCHEDULED));
+        return getMatchingJobs(workerMobile, 0, 20);
+    }
+
+    public List<Job> getMatchingJobs(String workerMobile, int page, int size) {
+        log.debug("JobService: [ENTER] getMatchingJobs - worker: {}, page: {}, size: {}", workerMobile, page, size);
+
+        var workerOpt = profileService.getWorkerProfile(workerMobile);
+        if (workerOpt.isEmpty()) {
+            log.warn("JobService: No worker profile found for {}, returning empty", workerMobile);
+            return List.of();
+        }
+
+        var worker = workerOpt.get();
+        double[] loc = worker.getLastLocation();
+        if (loc == null || loc.length < 2) {
+            log.warn("JobService: Worker {} has no location set, returning empty", workerMobile);
+            return List.of();
+        }
+
+        List<JobStatus> matchStatuses = List.of(JobStatus.BROADCASTED, JobStatus.SCHEDULED);
+        // Use the configured max radius (default 50km), converted to meters
+        double radiusMeters = (worker.getTravelRadiusKm() > 0 ? worker.getTravelRadiusKm() : 50) * 1000.0;
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+
+        List<Job> jobs;
+        if (worker.getSkills() != null && !worker.getSkills().isEmpty()) {
+            jobs = jobRepository.findMatchingJobs(
+                    loc[0], loc[1], matchStatuses, worker.getSkills(), radiusMeters, pageable);
+        } else {
+            // Worker hasn't set skills — show all nearby jobs
+            jobs = jobRepository.findNearbyJobs(
+                    loc[0], loc[1], matchStatuses, radiusMeters, pageable);
+        }
+
+        log.info("JobService: Found {} matching jobs for worker {} within {}m", jobs.size(), workerMobile, radiusMeters);
+        log.debug("JobService: [EXIT] getMatchingJobs");
+        return jobs;
     }
 
     @Transactional

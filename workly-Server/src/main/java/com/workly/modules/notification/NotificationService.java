@@ -64,13 +64,18 @@ public class NotificationService {
             }
         }
 
-        // In a real scenario, this would call FCM Admin SDK for the filtered list
-        log.debug("NotificationService: Dispatching FCM push to {} matched workers", matchingWorkers.size());
-        for (com.workly.modules.profile.WorkerProfile worker : matchingWorkers) {
-            sendPushNotification(worker.getDeviceToken(), "New Job Available",
-                    "A job matching your skills is available.");
+        // Batch-send FCM pushes instead of individual calls
+        log.debug("NotificationService: Collecting tokens for {} matched workers", matchingWorkers.size());
+        java.util.List<String> tokens = matchingWorkers.stream()
+                .map(com.workly.modules.profile.WorkerProfile::getDeviceToken)
+                .filter(t -> t != null && !t.isEmpty())
+                .toList();
+
+        if (!tokens.isEmpty()) {
+            fcmService.sendBatch(tokens, "New Job Available",
+                    "A job matching your skills is available.", null);
         }
-        log.debug("NotificationService: [EXIT] handleJobCreated - All push notifications dispatched");
+        log.debug("NotificationService: [EXIT] handleJobCreated - Batch push dispatched for {} tokens", tokens.size());
     }
 
     // Removed isWorkerAvailable as logic is now pushed to MongoDB aggregation

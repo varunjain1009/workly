@@ -33,7 +33,8 @@ class MatchingServiceTest {
         double radiusKm = 10.0;
         double expectedDistanceMeters = 10000.0;
 
-        List<WorkerProfile> mockWorkers = List.of(new WorkerProfile());
+        List<WorkerProfile> mockWorkers = new java.util.ArrayList<>();
+        mockWorkers.add(new WorkerProfile());
         when(workerRepository.findMatchingWorkers(skills, lon, lat, expectedDistanceMeters))
                 .thenReturn(mockWorkers);
 

@@ -22,12 +22,16 @@ class ProfileServiceTest {
     @Mock
     private SearchServiceClient searchServiceClient;
 
+    @Mock
+    private com.workly.modules.notification.NotificationService notificationService;
+
     private ProfileService profileService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
         profileService = new ProfileService(workerRepository, seekerRepository, searchServiceClient);
+        org.springframework.test.util.ReflectionTestUtils.setField(profileService, "notificationService", notificationService);
     }
 
     @Test

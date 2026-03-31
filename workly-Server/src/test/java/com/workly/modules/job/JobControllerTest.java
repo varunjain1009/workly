@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Collections;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -79,7 +80,7 @@ class JobControllerTest {
         Job job = new Job();
         job.setTitle("Seeker Job");
 
-        when(jobService.getSeekerJobs(eq("1234567890"), any())).thenReturn(Collections.singletonList(job));
+        when(jobService.getSeekerJobs(eq("1234567890"), any(), anyInt(), anyInt())).thenReturn(Collections.singletonList(job));
 
         mockMvc.perform(get("/api/v1/jobs/seeker"))
                 .andExpect(status().isOk())
@@ -93,7 +94,7 @@ class JobControllerTest {
         Job job = new Job();
         job.setTitle("Worker Job");
 
-        when(jobService.getWorkerJobs("1234567890")).thenReturn(Collections.singletonList(job));
+        when(jobService.getWorkerJobs(eq("1234567890"), anyInt(), anyInt())).thenReturn(Collections.singletonList(job));
 
         mockMvc.perform(get("/api/v1/jobs/worker"))
                 .andExpect(status().isOk())

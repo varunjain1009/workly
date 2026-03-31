@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import com.workly.modules.notification.NotificationService;
 import com.workly.modules.search.SearchServiceClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,7 @@ public class ProfileService {
     @Autowired
     private NotificationService notificationService;
 
+    @CacheEvict(value = "workerProfiles", key = "#profile.mobileNumber")
     public WorkerProfile createOrUpdateWorkerProfile(WorkerProfile profile) {
         log.debug("ProfileService: [ENTER] createOrUpdateWorkerProfile - Mobile: {}", profile.getMobileNumber());
         if (profile.getSkills() != null && !profile.getSkills().isEmpty()) {
@@ -50,14 +53,14 @@ public class ProfileService {
         });
     }
 
+    @Cacheable(value = "workerProfiles", key = "#mobileNumber", unless = "#result == null || !#result.isPresent()")
     public Optional<WorkerProfile> getWorkerProfile(String mobileNumber) {
+        log.debug("ProfileService: Cache MISS for workerProfile: {}", mobileNumber);
         java.util.List<WorkerProfile> profiles = workerRepository.findByMobileNumber(mobileNumber);
         if (profiles.isEmpty()) {
             return Optional.empty();
         }
         if (profiles.size() > 1) {
-            // Cleanup duplicates: keep the last modified one or just the first one
-            // Here we keep the first one and delete others to fix the data
             WorkerProfile kept = profiles.get(0);
             for (int i = 1; i < profiles.size(); i++) {
                 workerRepository.delete(profiles.get(i));
@@ -71,6 +74,7 @@ public class ProfileService {
         return seekerRepository.findByMobileNumber(mobileNumber);
     }
 
+    @CacheEvict(value = "workerProfiles", key = "#mobileNumber")
     public void updateLocation(String mobileNumber, double longitude, double latitude) {
         getWorkerProfile(mobileNumber).ifPresent(p -> {
             p.setLastLocation(new double[] { longitude, latitude });
@@ -78,6 +82,7 @@ public class ProfileService {
         });
     }
 
+    @CacheEvict(value = "workerProfiles", key = "#mobileNumber")
     public void updateAvailability(String mobileNumber, boolean available) {
         getWorkerProfile(mobileNumber).ifPresent(p -> {
             p.setAvailable(available);
