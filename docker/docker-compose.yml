@@ -1,13 +1,53 @@
 version: "3.8"
 
 services:
-  mongodb:
+  # ============================================
+  # MONGODB REPLICA SET (3 nodes)
+  # ============================================
+  mongo1:
     image: mongo:6.0
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
     ports:
       - "27017:27017"
     volumes:
-      - mongodb_data:/data/db
+      - mongo1_data:/data/db
+    healthcheck:
+      test: echo "rs.status().ok" | mongosh --port 27017 --quiet
+      interval: 10s
+      start_period: 20s
 
+  mongo2:
+    image: mongo:6.0
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27018"]
+    ports:
+      - "27018:27018"
+    volumes:
+      - mongo2_data:/data/db
+
+  mongo3:
+    image: mongo:6.0
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27019"]
+    ports:
+      - "27019:27019"
+    volumes:
+      - mongo3_data:/data/db
+
+  mongo-init:
+    image: mongo:6.0
+    depends_on:
+      mongo1:
+        condition: service_healthy
+      mongo2:
+        condition: service_started
+      mongo3:
+        condition: service_started
+    volumes:
+      - ./mongo-setup.sh:/scripts/mongo-setup.sh
+    entrypoint: [ "bash", "/scripts/mongo-setup.sh" ]
+
+  # ============================================
+  # POSTGRESQL + PGBOUNCER
+  # ============================================
   postgresql:
     image: postgres:15
     environment:
@@ -19,18 +59,92 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  redis:
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    depends_on:
+      - postgresql
+    environment:
+      DB_USER: workly
+      DB_PASSWORD: password
+      DB_HOST: postgresql
+      DB_NAME: workly
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 1000
+      DEFAULT_POOL_SIZE: 50
+    ports:
+      - "6432:5432"
+
+  # ============================================
+  # REDIS (Sentinel) - 1 Master, 2 Replicas, 3 Sentinels
+  # ============================================
+  redis-master:
     image: redis:7.0
     ports:
       - "6379:6379"
+    command: ["redis-server", "--port", "6379"]
 
+  redis-replica-1:
+    image: redis:7.0
+    command: ["redis-server", "--port", "6380", "--slaveof", "redis-master", "6379"]
+    ports:
+      - "6380:6380"
+    depends_on:
+      - redis-master
+
+  redis-replica-2:
+    image: redis:7.0
+    command: ["redis-server", "--port", "6381", "--slaveof", "redis-master", "6379"]
+    ports:
+      - "6381:6381"
+    depends_on:
+      - redis-master
+
+  redis-sentinel-1:
+    image: bitnami/redis-sentinel:7.0
+    environment:
+      - REDIS_MASTER_HOST=redis-master
+      - REDIS_MASTER_PORT_NUMBER=6379
+      - REDIS_MASTER_SET=mymaster
+      - REDIS_SENTINEL_QUORUM=2
+    ports:
+      - "26379:26379"
+    depends_on:
+      - redis-master
+
+  redis-sentinel-2:
+    image: bitnami/redis-sentinel:7.0
+    environment:
+      - REDIS_MASTER_HOST=redis-master
+      - REDIS_MASTER_PORT_NUMBER=6379
+      - REDIS_MASTER_SET=mymaster
+      - REDIS_SENTINEL_QUORUM=2
+    ports:
+      - "26380:26379"
+    depends_on:
+      - redis-master
+
+  redis-sentinel-3:
+    image: bitnami/redis-sentinel:7.0
+    environment:
+      - REDIS_MASTER_HOST=redis-master
+      - REDIS_MASTER_PORT_NUMBER=6379
+      - REDIS_MASTER_SET=mymaster
+      - REDIS_SENTINEL_QUORUM=2
+    ports:
+      - "26381:26379"
+    depends_on:
+      - redis-master
+
+  # ============================================
+  # KAFKA (3 Brokers)
+  # ============================================
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
-  kafka:
+  kafka1:
     image: confluentinc/cp-kafka:7.5.0
     depends_on:
       - zookeeper
@@ -39,12 +153,45 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://127.0.0.1:9094,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://127.0.0.1:9094,PLAINTEXT_INTERNAL://kafka1:29092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9094,PLAINTEXT_INTERNAL://0.0.0.0:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
 
+  kafka2:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9095:9095"
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://127.0.0.1:9095,PLAINTEXT_INTERNAL://kafka2:29093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9095,PLAINTEXT_INTERNAL://0.0.0.0:29093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+
+  kafka3:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9096:9096"
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://127.0.0.1:9096,PLAINTEXT_INTERNAL://kafka3:29094
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9096,PLAINTEXT_INTERNAL://0.0.0.0:29094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+
+  # ============================================
+  # ELASTICSEARCH
+  # ============================================
   elasticsearch:
     build:
       context: elasticsearch
@@ -67,6 +214,8 @@ services:
       - "9200:9200"
 
 volumes:
-  mongodb_data:
+  mongo1_data:
+  mongo2_data:
+  mongo3_data:
   postgres_data:
   elasticsearch_data:

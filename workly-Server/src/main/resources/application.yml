@@ -9,15 +9,16 @@ spring:
 
   data:
     mongodb:
-      uri: mongodb://localhost:27017/workly
+      uri: mongodb://localhost:27017,localhost:27018,localhost:27019/workly?replicaSet=rs0
       auto-index-creation: true
     redis:
-      host: localhost
-      port: 6379
+      sentinel:
+        master: mymaster
+        nodes: localhost:26379,localhost:26380,localhost:26381
     jpa:
       database-platform: org.hibernate.dialect.PostgreSQLDialect
     postgresql:
-      uri: jdbc:postgresql://localhost:5432/workly
+      uri: jdbc:postgresql://localhost:6432/workly
       username: workly
       password: password
 
@@ -28,7 +29,7 @@ spring:
     password: password
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/workly
+    url: jdbc:postgresql://localhost:6432/workly
     username: workly
     password: password
     driver-class-name: org.postgresql.Driver
@@ -38,7 +39,7 @@ spring:
       notification-interval-hours: 1
 
   kafka:
-    bootstrap-servers: 127.0.0.1:9094
+    bootstrap-servers: 127.0.0.1:9094,127.0.0.1:9095,127.0.0.1:9096
     consumer:
       group-id: workly-group
       auto-offset-reset: earliest
