@@ -15,5 +15,8 @@ project(':search-service').projectDir = file('workly-Search-Service')
 include ':config-service'
 project(':config-service').projectDir = file('workly-Config-Service')
 
+include ':auth-service'
+project(':auth-service').projectDir = file('workly-Auth-Service')
+
 includeBuild 'workly-Help-Seeker'
 includeBuild 'workly-Help-Provider'
