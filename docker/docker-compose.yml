@@ -276,6 +276,38 @@ services:
       - elasticsearch
       - jaeger
 
+  workly-notification-service:
+    build:
+      context: ..
+      dockerfile: workly-Notification-Service/Dockerfile
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/workly?replicaSet=rs0
+      - SPRING_REDIS_SENTINEL_NODES=redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka1:29092,kafka2:29093,kafka3:29094
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - OTEL_SERVICE_NAME=workly-notification-service
+    ports:
+      - "8086:8086"
+    depends_on:
+      - mongo-init
+      - redis-sentinel-1
+      - kafka1
+
+  workly-tracking-service:
+    build:
+      context: ..
+      dockerfile: workly-Tracking-Service/Dockerfile
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/workly?replicaSet=rs0
+      - SPRING_REDIS_SENTINEL_NODES=redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - OTEL_SERVICE_NAME=workly-tracking-service
+    ports:
+      - "8087:8087"
+    depends_on:
+      - mongo-init
+      - redis-sentinel-1
+
 volumes:
   mongo1_data:
   mongo2_data:

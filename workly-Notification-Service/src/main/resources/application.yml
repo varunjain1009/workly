@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: workly-notification-service
+
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017,localhost:27018,localhost:27019/workly?replicaSet=rs0
+      auto-index-creation: true
+    redis:
+      sentinel:
+        master: mymaster
+        nodes: localhost:26379,localhost:26380,localhost:26381
+
+  kafka:
+    bootstrap-servers: 127.0.0.1:9094,127.0.0.1:9095,127.0.0.1:9096
+    listener:
+      concurrency: 3
+    consumer:
+      group-id: notification-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+
+logging:
+  level:
+    com.workly: DEBUG
+
+server:
+  port: 8086
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+    instances:
+      fcm:
+        baseConfig: default
+      fcmBatch:
+        baseConfig: default
+
+auth:
+  token:
+    secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970

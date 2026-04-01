@@ -1,0 +1,17 @@
+package com.workly.notification.domain.worker;
+
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
+
+import java.util.List;
+
+public interface WorkerProfileRepository extends MongoRepository<WorkerProfile, String> {
+
+    @Query("{ 'available': true, 'skills': { $in: ?0 }, 'lastLocation': { $near: { $geometry: { type: 'Point', coordinates: [?1, ?2] }, $maxDistance: ?3 } } }")
+    List<WorkerProfile> findMatchingWorkers(List<String> requiredSkills, double longitude, double latitude,
+            double maxDistance);
+
+    @Query("{ 'available': true, 'skills': { $in: ?0 }, 'lastLocation': { $near: { $geometry: { type: 'Point', coordinates: [?1, ?2] }, $maxDistance: ?3 } }, 'unavailableSlots': { $not: { $elemMatch: { startTime: { $lte: ?4 }, endTime: { $gte: ?4 } } } } }")
+    List<WorkerProfile> findMatchingWorkersAvailableAt(List<String> requiredSkills, double longitude, double latitude,
+            double maxDistance, long targetTimeMillis);
+}

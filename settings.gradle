@@ -21,5 +21,11 @@ project(':auth-service').projectDir = file('workly-Auth-Service')
 include ':gateway'
 project(':gateway').projectDir = file('workly-Gateway')
 
+include ':notification-service'
+project(':notification-service').projectDir = file('workly-Notification-Service')
+
+include ':tracking-service'
+project(':tracking-service').projectDir = file('workly-Tracking-Service')
+
 includeBuild 'workly-Help-Seeker'
 includeBuild 'workly-Help-Provider'
