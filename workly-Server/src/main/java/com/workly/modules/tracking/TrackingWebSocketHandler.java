@@ -1,6 +1,8 @@
 package com.workly.modules.tracking;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -13,11 +15,16 @@ import java.io.IOException;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class TrackingWebSocketHandler extends TextWebSocketHandler {
 
-    // jobId -> role -> session
+    // jobId -> role -> session (local to this JVM instance)
     // e.g., "job123" -> {"PROVIDER": session1, "SEEKER": session2}
     private final Map<String, Map<String, WebSocketSession>> jobSessions = new ConcurrentHashMap<>();
+
+    static final String TRACKING_CHANNEL_PREFIX = "tracking:";
+
+    private final StringRedisTemplate redisTemplate;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -43,21 +50,23 @@ public class TrackingWebSocketHandler extends TextWebSocketHandler {
 
         if (jobId == null || role == null) return;
 
-        // If the message is from PROVIDER, route to SEEKER
+        // PROVIDER location updates are fanned out via Redis Pub/Sub so every
+        // server instance (including this one) delivers to its local SEEKER session.
         if ("PROVIDER".equalsIgnoreCase(role)) {
-            Map<String, WebSocketSession> participants = jobSessions.get(jobId);
-            if (participants != null) {
-                WebSocketSession seekerSession = participants.get("SEEKER");
-                if (seekerSession != null && seekerSession.isOpen()) {
-                    try {
-                        seekerSession.sendMessage(new TextMessage(message.getPayload()));
-                        log.debug("TrackingWebSocketHandler: Routed location update for Job={} to Seeker", jobId);
-                    } catch (IOException e) {
-                        log.error("Failed to send tracking payload to seeker", e);
-                    }
-                }
-            }
+            redisTemplate.convertAndSend(TRACKING_CHANNEL_PREFIX + jobId, message.getPayload());
+            log.debug("TrackingWebSocketHandler: Published location update for Job={} to Redis", jobId);
         }
+    }
+
+    /**
+     * Returns the local SEEKER WebSocketSession for a job if it is connected to
+     * this JVM instance, or {@code null} otherwise. Used by {@link TrackingRedisSubscriber}.
+     */
+    public WebSocketSession getLocalSeekerSession(String jobId) {
+        Map<String, WebSocketSession> participants = jobSessions.get(jobId);
+        if (participants == null) return null;
+        WebSocketSession seekerSession = participants.get("SEEKER");
+        return (seekerSession != null && seekerSession.isOpen()) ? seekerSession : null;
     }
 
     @Override
