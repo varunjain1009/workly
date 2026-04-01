@@ -1,6 +1,7 @@
 package com.workly.modules.location;
 
 import com.workly.modules.profile.ProfileService;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -16,6 +17,7 @@ public class LocationService {
 
     private final ProfileService profileService;
     private final StringRedisTemplate redisTemplate;
+    private final MeterRegistry meterRegistry;
 
     private static final String GEO_KEY = "worker:locations";
     private static final String DIRTY_SET_KEY = "worker:locations:dirty";
@@ -70,6 +72,12 @@ public class LocationService {
         // Clear the dirty set after successful flush
         redisTemplate.delete(DIRTY_SET_KEY);
         log.info("LocationService: Flushed {}/{} locations to MongoDB", flushed, dirtyWorkers.size());
+
+        // Emit current Geo set size as a one-shot counter so Prometheus can see the
+        // post-flush cardinality in addition to the gauge registered in CacheMetricsConfig.
+        Long geoSize = redisTemplate.opsForZSet().size(GEO_KEY);
+        meterRegistry.gauge("location.redis.geo.size.snapshot", geoSize != null ? geoSize : 0);
+        log.debug("LocationService: Redis Geo set size after flush = {}", geoSize);
     }
 }
 

@@ -366,6 +366,24 @@ The `availableJobs` cache absorbs repeated geo-query fan-out under high load (wo
 the browse feed every few seconds). Under heavy traffic, a 30-second TTL means at most one
 MongoDB geo query per worker per interval regardless of client polling rate.
 
+### Cache & Redis Geo Metrics (Story 6.6)
+
+`CacheMetricsConfig` registers two sets of Prometheus metrics:
+
+| Metric | Type | Description |
+|---|---|---|
+| `location.redis.geo.size` | Gauge | Live count of workers tracked in `worker:locations` (Redis Geo sorted set) |
+| `location.redis.geo.size.snapshot` | Gauge | Post-flush snapshot emitted by `LocationService` after every 60-second batch flush |
+| `cache.gets{name,result}` | Counter | Hit / miss counters for each named cache, auto-bound by Spring Boot Actuator |
+| `cache.size{name}` | Gauge | Logical cache size (0 for Redis — use `cache.gets` instead) |
+
+All metrics are accessible at `GET /actuator/prometheus` (already exposed in `application.yml`)
+and can be scraped directly by a Prometheus job targeting port 8080.
+
+Alerts to consider:
+- `location.redis.geo.size` drops to 0 — possible Redis flush or eviction of the geo key
+- `cache.gets{result="miss"}` spikes — cache TTL too short or unexpected load pattern
+
 ---
 
 ## Future Architecture Enhancements

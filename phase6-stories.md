@@ -95,7 +95,7 @@ Also cache `getSeekerJobs` results with key `jobs:seeker:{mobile}:{type}`, TTL 1
 ---
 
 ## Story 6.6 — Cache & Redis Geo Metrics
-**Status:** not started
+**Status:** completed
 
 Expose cache hit/miss counters and Redis Geo set size as Prometheus metrics so the
 Grafana dashboard (from SCALE_PLAN Phase 3) can show cache efficiency in real time.
