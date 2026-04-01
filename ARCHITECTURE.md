@@ -344,6 +344,28 @@ Read-heavy, eventually-consistent queries are routed to replica secondaries:
 All writes and the job-acceptance critical path continue to use the default primary template.
 With a 3-node replica set this effectively doubles available read throughput.
 
+### Layered Job Listing Cache (Story 6.5)
+
+Two Redis-backed caches sit in front of the most expensive job-listing queries:
+
+| Cache name | Method | Key | TTL |
+|---|---|---|---|
+| `availableJobs` | `JobService.getMatchingJobs()` | `{workerMobile}:{page}:{size}` | 30 s |
+| `seekerJobs` | `JobService.getSeekerJobs()` | `{mobile}:{type}:{page}:{size}` | 15 s |
+
+Cache invalidation uses `@CacheEvict(allEntries = true)` on every state-mutating path:
+
+| Trigger | Evicted caches |
+|---|---|
+| `createJob()` | `availableJobs` |
+| `updateJobStatus()` | `availableJobs`, `seekerJobs` |
+| `completeJob()` | `availableJobs`, `seekerJobs` |
+
+TTLs are defined in `CacheConfig` and can be adjusted without code changes.
+The `availableJobs` cache absorbs repeated geo-query fan-out under high load (workers refreshing
+the browse feed every few seconds). Under heavy traffic, a 30-second TTL means at most one
+MongoDB geo query per worker per interval regardless of client polling rate.
+
 ---
 
 ## Future Architecture Enhancements

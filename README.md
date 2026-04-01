@@ -173,6 +173,7 @@ If testing on the **Android Emulator**, use the specialized localhost bridge: `1
 | Compound indexes | `{ region, status, skills }` indexes | Index-aligned shard queries |
 | Redis Geo matching | `GEORADIUS` primary, MongoDB `$near` fallback | Matching latency <1 ms |
 | Secondary read routing | `secondaryMongoTemplate` for listing queries | 2–3× read throughput |
+| Job listing cache | Redis `@Cacheable` on `getMatchingJobs` (30s) + `getSeekerJobs` (15s) | Eliminates repeated geo queries under load |
 
 > See `docker/mongo-shard-init.js` for `sh.shardCollection()` commands to enable sharding on a `mongos` cluster.
 

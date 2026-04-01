@@ -9,6 +9,9 @@ import com.workly.modules.search.SearchServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -46,6 +49,9 @@ public class JobService {
             JobStatus.ASSIGNED, Set.of(JobStatus.COMPLETED, JobStatus.CANCELLED));
 
     @Transactional
+    @Caching(evict = {
+        @CacheEvict(value = "availableJobs", allEntries = true)
+    })
     public Job createJob(Job job) {
         log.debug("JobService: [ENTER] createJob - Transaction context initiated for job parameter.");
         if (job.getRequiredSkills() != null && !job.getRequiredSkills().isEmpty()) {
@@ -81,6 +87,10 @@ public class JobService {
     }
 
     @Transactional
+    @Caching(evict = {
+        @CacheEvict(value = "availableJobs", allEntries = true),
+        @CacheEvict(value = "seekerJobs",    allEntries = true)
+    })
     public Job updateJobStatus(String jobId, JobStatus status, String requestingUserMobile) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> WorklyException.notFound("Job not found"));
@@ -179,6 +189,7 @@ public class JobService {
         return getSeekerJobs(mobileNumber, type, 0, 50);
     }
 
+    @Cacheable(value = "seekerJobs", key = "#mobileNumber + ':' + #type + ':' + #page + ':' + #size")
     public List<Job> getSeekerJobs(String mobileNumber, String type, int page, int size) {
         log.debug("JobService: [ENTER] getSeekerJobs - mobile: {}, type: {}, page: {}, size: {}", mobileNumber, type, page, size);
 
@@ -232,6 +243,7 @@ public class JobService {
         return getMatchingJobs(workerMobile, 0, 20);
     }
 
+    @Cacheable(value = "availableJobs", key = "#workerMobile + ':' + #page + ':' + #size")
     public List<Job> getMatchingJobs(String workerMobile, int page, int size) {
         log.debug("JobService: [ENTER] getMatchingJobs - worker: {}, page: {}, size: {}", workerMobile, page, size);
 
@@ -282,6 +294,10 @@ public class JobService {
     }
 
     @Transactional
+    @Caching(evict = {
+        @CacheEvict(value = "availableJobs", allEntries = true),
+        @CacheEvict(value = "seekerJobs",    allEntries = true)
+    })
     public Job completeJob(String jobId, String otp, String requestingUserMobile) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> WorklyException.notFound("Job not found"));

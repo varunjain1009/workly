@@ -78,7 +78,7 @@ Primary is still used for all writes and job acceptance.
 ---
 
 ## Story 6.5 — Layered Job Listing Cache
-**Status:** not started
+**Status:** completed
 
 Add a two-level cache for `GET /api/v1/jobs/available` (worker's matching jobs):
 - **L1**: Spring `@Cacheable` backed by Redis, key = `jobs:available:{mobileNumber}`, TTL 30s

@@ -28,7 +28,8 @@ public class CacheConfig {
         Map<String, RedisCacheConfiguration> cacheConfigs = Map.of(
                 "workerProfiles", defaultConfig.entryTtl(Duration.ofMinutes(5)),
                 "seekerProfiles", defaultConfig.entryTtl(Duration.ofMinutes(10)),
-                "availableJobs", defaultConfig.entryTtl(Duration.ofSeconds(30))
+                "availableJobs", defaultConfig.entryTtl(Duration.ofSeconds(30)),
+                "seekerJobs",    defaultConfig.entryTtl(Duration.ofSeconds(15))
         );
 
         return RedisCacheManager.builder(connectionFactory)
