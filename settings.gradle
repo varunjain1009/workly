@@ -27,5 +27,11 @@ project(':notification-service').projectDir = file('workly-Notification-Service'
 include ':tracking-service'
 project(':tracking-service').projectDir = file('workly-Tracking-Service')
 
+include ':profile-service'
+project(':profile-service').projectDir = file('workly-Profile-Service')
+
+include ':matching-service'
+project(':matching-service').projectDir = file('workly-Matching-Service')
+
 includeBuild 'workly-Help-Seeker'
 includeBuild 'workly-Help-Provider'

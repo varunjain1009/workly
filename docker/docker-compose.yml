@@ -308,6 +308,37 @@ services:
       - mongo-init
       - redis-sentinel-1
 
+  workly-profile-service:
+    build:
+      context: ..
+      dockerfile: workly-Profile-Service/Dockerfile
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/workly?replicaSet=rs0
+      - SPRING_REDIS_SENTINEL_NODES=redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka1:29092,kafka2:29093,kafka3:29094
+      - SEARCH_SERVICE_URL=http://workly-search-service:8083
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - OTEL_SERVICE_NAME=workly-profile-service
+    ports:
+      - "8088:8088"
+    depends_on:
+      - mongo-init
+      - redis-sentinel-1
+      - kafka1
+
+  workly-matching-service:
+    build:
+      context: ..
+      dockerfile: workly-Matching-Service/Dockerfile
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/workly?replicaSet=rs0
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - OTEL_SERVICE_NAME=workly-matching-service
+    ports:
+      - "8089:8089"
+    depends_on:
+      - mongo-init
+
 volumes:
   mongo1_data:
   mongo2_data:

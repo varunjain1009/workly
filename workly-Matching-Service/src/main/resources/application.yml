@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: workly-matching-service
+
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017,localhost:27018,localhost:27019/workly?replicaSet=rs0
+      auto-index-creation: true
+
+logging:
+  level:
+    com.workly: DEBUG
+
+server:
+  port: 8089
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+auth:
+  token:
+    secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
