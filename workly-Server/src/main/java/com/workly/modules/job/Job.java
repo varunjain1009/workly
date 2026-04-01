@@ -4,6 +4,8 @@ import com.workly.core.MongoBaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.GeoSpatialIndexType;
 import org.springframework.data.mongodb.core.index.GeoSpatialIndexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -14,6 +16,14 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Document(collection = "jobs")
+@CompoundIndexes({
+    // Primary query shape: jobs for a region by status and skills
+    @CompoundIndex(name = "idx_region_status_skills",
+            def = "{'region': 1, 'status': 1, 'requiredSkills': 1}"),
+    // Worker's matching-jobs geo query filtered by region
+    @CompoundIndex(name = "idx_region_status",
+            def = "{'region': 1, 'status': 1}")
+})
 public class Job extends MongoBaseEntity {
     @Id
     private String id;

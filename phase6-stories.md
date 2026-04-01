@@ -25,7 +25,7 @@ This field will become the MongoDB shard key in Story 6.2.
 ---
 
 ## Story 6.2 — Shard-Key Compound Indexes
-**Status:** not started
+**Status:** completed
 
 Add compound indexes aligned with the MongoDB shard keys and the most common query shapes:
 - `jobs`: `{ region: 1, status: 1, requiredSkills: 1 }` and `{ region: 1, location: "2dsphere" }`

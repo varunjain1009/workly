@@ -4,6 +4,8 @@ import com.workly.core.MongoBaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.GeoSpatialIndexType;
 import org.springframework.data.mongodb.core.index.GeoSpatialIndexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -16,6 +18,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @EqualsAndHashCode(callSuper = true)
 @Document(collection = "worker_profiles")
 @JsonIgnoreProperties(ignoreUnknown = true)
+@CompoundIndexes({
+    // Primary matching query: available workers in a region with target skills
+    @CompoundIndex(name = "idx_region_available_skills",
+            def = "{'region': 1, 'available': 1, 'skills': 1}"),
+    // Admin/analytics: workers per region
+    @CompoundIndex(name = "idx_region_tier",
+            def = "{'region': 1, 'tier': 1}")
+})
 public class WorkerProfile extends MongoBaseEntity {
     @Id
     private String id;
