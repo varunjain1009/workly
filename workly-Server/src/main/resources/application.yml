@@ -1,4 +1,6 @@
 spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   application:
     name: workly-server
   main:
@@ -39,6 +41,8 @@ spring:
       notification-interval-hours: 1
 
   kafka:
+    listener:
+      concurrency: 3
     bootstrap-servers: 127.0.0.1:9094,127.0.0.1:9095,127.0.0.1:9096
     consumer:
       group-id: workly-group
@@ -58,6 +62,36 @@ logging:
 
 server:
   port: 8080
+  shutdown: graceful
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+    instances:
+      searchService:
+        baseConfig: default
+      fcm:
+        baseConfig: default
+      fcmBatch:
+        baseConfig: default
 
 workly:
   features:

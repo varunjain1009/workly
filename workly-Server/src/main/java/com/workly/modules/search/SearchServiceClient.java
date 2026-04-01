@@ -12,6 +12,7 @@ import org.springframework.http.HttpMethod;
 
 import java.util.List;
 import java.util.Collections;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +24,7 @@ public class SearchServiceClient {
     @Value("${search-service.url}")
     private String searchServiceUrl;
 
+    @CircuitBreaker(name = "searchService", fallbackMethod = "fallbackNormalizeSkills")
     public List<String> normalizeSkills(List<String> skills) {
         log.debug("SearchServiceClient: [ENTER] normalizeSkills - input skills: {}", skills);
         if (skills == null || skills.isEmpty()) {
@@ -51,6 +53,11 @@ public class SearchServiceClient {
             log.error("Failed to call search service for normalization", e);
         }
         log.debug("SearchServiceClient: [EXIT] normalizeSkills - Falling back to original skills");
+        return skills;
+    }
+
+    public List<String> fallbackNormalizeSkills(List<String> skills, Throwable t) {
+        log.warn("SearchServiceClient: [FALLBACK] Circuit breaker open or error: {}. Falling back to original skills.", t.getMessage());
         return skills;
     }
 }

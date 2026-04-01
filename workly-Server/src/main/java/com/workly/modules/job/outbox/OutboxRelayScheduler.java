@@ -33,7 +33,7 @@ public class OutboxRelayScheduler {
         }
 
         try {
-            List<OutboxEvent> pendingEvents = outboxEventRepository.findByProcessedFalseOrderByCreatedAtAsc();
+            List<OutboxEvent> pendingEvents = outboxEventRepository.findTop100ByProcessedFalseOrderByCreatedAtAsc();
             if (pendingEvents.isEmpty()) return;
 
             log.debug("Found {} pending outbox events to process", pendingEvents.size());

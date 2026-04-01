@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
 @Service
 @Slf4j
@@ -25,6 +26,7 @@ public class FCMService {
     /**
      * Send a notification with an optional key-value data payload.
      */
+    @CircuitBreaker(name = "fcm", fallbackMethod = "fallbackSendNotificationWithData")
     public void sendNotificationWithData(String token, String title, String body, Map<String, String> data) {
         if (token == null || token.isEmpty()) {
             log.warn("FCM Token is empty, skipping notification");
@@ -41,7 +43,12 @@ public class FCMService {
             }
         } catch (Exception e) {
             log.error("Error sending FCM notification", e);
+            throw new RuntimeException("FCM send failed", e);
         }
+    }
+
+    public void fallbackSendNotificationWithData(String token, String title, String body, Map<String, String> data, Throwable t) {
+        log.warn("FCMService: [FALLBACK] Circuit breaker active or call failed. Skipping FCM message: {}. Error: {}", title, t.getMessage());
     }
 
     /**
@@ -50,6 +57,7 @@ public class FCMService {
      *
      * @return number of successfully sent messages
      */
+    @CircuitBreaker(name = "fcmBatch", fallbackMethod = "fallbackSendBatch")
     public int sendBatch(List<String> tokens, String title, String body, Map<String, String> data) {
         if (tokens == null || tokens.isEmpty()) return 0;
 
@@ -88,7 +96,15 @@ public class FCMService {
         }
 
         log.info("FCMService: Batch complete — {}/{} sent successfully", totalSuccess, validTokens.size());
+        if (totalSuccess == 0 && !validTokens.isEmpty()) {
+            throw new RuntimeException("All FCM batch iterations failed");
+        }
         return totalSuccess;
+    }
+
+    public int fallbackSendBatch(List<String> tokens, String title, String body, Map<String, String> data, Throwable t) {
+        log.warn("FCMService: [FALLBACK] Circuit breaker active or completely failed. Skipping FCM batch. Error: {}", t.getMessage());
+        return 0;
     }
 
     private Message buildMessage(String token, String title, String body, Map<String, String> data) {
