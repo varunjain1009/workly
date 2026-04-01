@@ -165,6 +165,17 @@ If you are testing from a physical Android Device, ensure your host machine IP (
 
 If testing on the **Android Emulator**, use the specialized localhost bridge: `192.168.31.112`.
 
+## 🚀 Scalability Features (Phase 6)
+
+| Feature | What | Impact |
+|---|---|---|
+| Region tagging | 1°×1° shard key on `Job` + `WorkerProfile` | Foundation for MongoDB sharding |
+| Compound indexes | `{ region, status, skills }` indexes | Index-aligned shard queries |
+| Redis Geo matching | `GEORADIUS` primary, MongoDB `$near` fallback | Matching latency <1 ms |
+| Secondary read routing | `secondaryMongoTemplate` for listing queries | 2–3× read throughput |
+
+> See `docker/mongo-shard-init.js` for `sh.shardCollection()` commands to enable sharding on a `mongos` cluster.
+
 ## 📖 Documentation
 *   **[Product Roadmap](PRODUCT_ROADMAP.md)**: Upcoming features and critical functionality gaps.
 *   **[Architecture Guide](ARCHITECTURE.md)**: System design, diagrams, and data flow.

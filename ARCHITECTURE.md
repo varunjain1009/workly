@@ -301,6 +301,51 @@ sequenceDiagram
 
 ---
 
+---
+
+## Scalability — Phase 6
+
+### Region-Based Sharding (Stories 6.1 & 6.2)
+
+All `Job` and `WorkerProfile` documents carry a `region` field — a 1°×1° lat/lon grid cell string
+(e.g. `"19_72"` for Mumbai). This is the MongoDB shard key, set automatically on job creation and
+on every GPS location flush.
+
+Compound indexes are aligned with the shard key and the most common query shapes:
+
+| Collection | Index |
+|---|---|
+| `jobs` | `{ region, status, requiredSkills }`, `{ region, status }` |
+| `worker_profiles` | `{ region, available, skills }`, `{ region, tier }` |
+
+A `docker/mongo-shard-init.js` script contains the `sh.shardCollection()` commands and pre-splits
+chunks for 7 Indian metro regions, ready to run against a `mongos` router.
+
+### Redis Geo Primary Matching (Story 6.3)
+
+`MatchingService.findMatches()` uses Redis `GEORADIUS` as the primary source for nearby workers.
+Only if Redis returns an empty set (cold start / eviction) does it fall back to MongoDB `$near`.
+This reduces matching latency from ~50 ms (Mongo geo query) to <1 ms for workers already tracked
+in the Redis Geo set maintained by the Tracking Service.
+
+### MongoDB Secondary Read Preference (Story 6.4)
+
+A dedicated `secondaryMongoTemplate` bean (`MongoReadConfig`) is configured with
+`ReadPreference.secondaryPreferred()`, re-using the same connection pool as the primary template.
+
+Read-heavy, eventually-consistent queries are routed to replica secondaries:
+
+| Method | Template | Rationale |
+|---|---|---|
+| `JobService.getSeekerJobs()` | secondary | Job history — eventual consistency acceptable |
+| `JobService.getWorkerJobs()` | secondary | Job history — eventual consistency acceptable |
+| `JobService.getMatchingJobs()` | secondary | Browse feed — staleness < replica lag |
+
+All writes and the job-acceptance critical path continue to use the default primary template.
+With a 3-node replica set this effectively doubles available read throughput.
+
+---
+
 ## Future Architecture Enhancements
 
 To see the detailed business functionality gaps this architecture will address, refer to the [Product Roadmap](PRODUCT_ROADMAP.md). Upcoming architectural changes include:

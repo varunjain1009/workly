@@ -61,7 +61,7 @@ This makes matching sub-millisecond for workers already tracked in Redis Geo.
 ---
 
 ## Story 6.4 — MongoDB Secondary Read Preference
-**Status:** not started
+**Status:** completed
 
 Route all read-heavy, non-critical queries to MongoDB replica secondaries.
 Configure a secondary `MongoTemplate` bean and apply it to `JobRepository` list queries

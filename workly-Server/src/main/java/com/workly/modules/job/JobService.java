@@ -8,6 +8,10 @@ import com.workly.modules.profile.ProfileService;
 import com.workly.modules.search.SearchServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +30,9 @@ public class JobService {
     private final OutboxEventRepository outboxEventRepository;
     private final SearchServiceClient searchServiceClient;
     private final ProfileService profileService;
+
+    @Qualifier("secondaryMongoTemplate")
+    private final MongoTemplate secondaryMongoTemplate;
 
     private static final String JOB_TOPIC = "job.created";
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
@@ -174,30 +181,29 @@ public class JobService {
 
     public List<Job> getSeekerJobs(String mobileNumber, String type, int page, int size) {
         log.debug("JobService: [ENTER] getSeekerJobs - mobile: {}, type: {}, page: {}, size: {}", mobileNumber, type, page, size);
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
-        List<Job> jobs;
 
-        if ("active".equalsIgnoreCase(type)) {
-            List<JobStatus> activeStatuses = List.of(
-                    JobStatus.CREATED,
-                    JobStatus.BROADCASTED,
-                    JobStatus.SCHEDULED,
-                    JobStatus.PENDING_ACCEPTANCE,
-                    JobStatus.ASSIGNED);
-            jobs = jobRepository.findBySeekerMobileNumberAndStatusIn(mobileNumber, activeStatuses, pageable);
-        } else if ("past".equalsIgnoreCase(type)) {
-            List<JobStatus> pastStatuses = List.of(
-                    JobStatus.COMPLETED,
-                    JobStatus.CANCELLED,
-                    JobStatus.EXPIRED);
-            jobs = jobRepository.findBySeekerMobileNumberAndStatusIn(mobileNumber, pastStatuses, pageable);
-        } else {
-            jobs = jobRepository.findBySeekerMobileNumber(mobileNumber);
-        }
+        List<JobStatus> statuses = resolveStatusFilter(type);
+        Query q = (statuses != null)
+                ? Query.query(Criteria.where("seekerMobileNumber").is(mobileNumber)
+                        .and("status").in(statuses))
+                : Query.query(Criteria.where("seekerMobileNumber").is(mobileNumber));
+        q.with(org.springframework.data.domain.PageRequest.of(page, size));
 
+        // Read from replica secondary — seeker job history is eventually consistent
+        List<Job> jobs = secondaryMongoTemplate.find(q, Job.class);
         log.info("Found {} {} jobs for seeker mobile: {}", jobs.size(), type != null ? type : "all", mobileNumber);
         log.debug("JobService: [EXIT] getSeekerJobs - collection size: {}", jobs.size());
         return jobs;
+    }
+
+    private List<JobStatus> resolveStatusFilter(String type) {
+        if ("active".equalsIgnoreCase(type)) {
+            return List.of(JobStatus.CREATED, JobStatus.BROADCASTED, JobStatus.SCHEDULED,
+                    JobStatus.PENDING_ACCEPTANCE, JobStatus.ASSIGNED);
+        } else if ("past".equalsIgnoreCase(type)) {
+            return List.of(JobStatus.COMPLETED, JobStatus.CANCELLED, JobStatus.EXPIRED);
+        }
+        return null;
     }
 
     public List<Job> getWorkerJobs(String mobileNumber) {
@@ -206,8 +212,13 @@ public class JobService {
 
     public List<Job> getWorkerJobs(String mobileNumber, int page, int size) {
         log.debug("Fetching worker jobs - mobile: {}, page: {}, size: {}", mobileNumber, page, size);
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
-        List<Job> jobs = jobRepository.findByWorkerMobileNumberOrderByCreatedAtDesc(mobileNumber, pageable);
+        Query q = Query.query(Criteria.where("workerMobileNumber").is(mobileNumber))
+                .with(org.springframework.data.domain.Sort.by(
+                        org.springframework.data.domain.Sort.Direction.DESC, "createdAt"))
+                .with(org.springframework.data.domain.PageRequest.of(page, size));
+
+        // Read from replica secondary — worker job history is eventually consistent
+        List<Job> jobs = secondaryMongoTemplate.find(q, Job.class);
         log.info("Found {} jobs for worker mobile: {}", jobs.size(), mobileNumber);
         return jobs;
     }
