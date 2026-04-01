@@ -178,6 +178,18 @@ If testing on the **Android Emulator**, use the specialized localhost bridge: `1
 
 > See `docker/mongo-shard-init.js` for `sh.shardCollection()` commands to enable sharding on a `mongos` cluster.
 
+## 🔒 Security Model
+
+| Concern | Implementation |
+|---|---|
+| Authentication | OTP → JWT (HS256, configurable TTL) |
+| Authorization | JWT filter populates `GrantedAuthority` from `role` claim; `@PreAuthorize` on admin endpoints |
+| Admin isolation | Admin JWTs carry `role=ADMIN`; regular user tokens carry no role and cannot reach `/api/v1/admin/**` |
+| Rate limiting | `RateLimitFilter` applied globally after JWT validation |
+| SQL safety | `CustomReportService` accepts only `SELECT`; dangerous token blocklist enforced via regex |
+| Coordinates | Server-side validation — latitude ∈ [-90,90], longitude ∈ [-180,180] |
+| OTP safety | OTP values are never written to logs; only mobile numbers appear |
+
 ## 📖 Documentation
 *   **[Product Roadmap](PRODUCT_ROADMAP.md)**: Upcoming features and critical functionality gaps.
 *   **[Architecture Guide](ARCHITECTURE.md)**: System design, diagrams, and data flow.

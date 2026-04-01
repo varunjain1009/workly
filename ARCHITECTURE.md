@@ -386,6 +386,28 @@ Alerts to consider:
 
 ---
 
+## Security Architecture
+
+### JWT & Role-Based Access
+
+All tokens are signed HS256 JWTs. The common `JwtAuthenticationFilter` extracts the `role` claim and
+creates `GrantedAuthority` objects so that method-level security (`@PreAuthorize`) works correctly.
+
+| Token type | Issued by | `role` claim | Can reach |
+|---|---|---|---|
+| User token | `POST /auth/verify-otp` | *(absent)* | All `/api/v1/**` except `/admin/**` |
+| Admin token | `POST /admin/auth/login` | `ADMIN` | `/api/v1/admin/**` (guarded by `@PreAuthorize("hasRole('ADMIN')")`) |
+
+### Request Pipeline
+
+```
+Client → RateLimitFilter → JwtAuthenticationFilter → @PreAuthorize → Controller
+```
+
+`RateLimitFilter` runs for every request regardless of auth status.
+
+---
+
 ## Future Architecture Enhancements
 
 To see the detailed business functionality gaps this architecture will address, refer to the [Product Roadmap](PRODUCT_ROADMAP.md). Upcoming architectural changes include:
