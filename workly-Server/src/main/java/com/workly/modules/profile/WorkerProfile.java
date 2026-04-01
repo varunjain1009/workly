@@ -34,6 +34,12 @@ public class WorkerProfile extends MongoBaseEntity {
 
     private String deviceToken;
 
+    /**
+     * 1°×1° grid region derived from {@code lastLocation} on each location flush.
+     * Used as the MongoDB shard key.
+     */
+    private String region;
+
     private List<UnavailableSlot> unavailableSlots;
     
     // KYC and Trust

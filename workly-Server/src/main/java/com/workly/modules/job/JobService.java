@@ -1,5 +1,6 @@
 package com.workly.modules.job;
 
+import com.workly.core.RegionHelper;
 import com.workly.core.WorklyException;
 import com.workly.modules.job.outbox.OutboxEvent;
 import com.workly.modules.job.outbox.OutboxEventRepository;
@@ -49,6 +50,10 @@ public class JobService {
             job.setStatus(JobStatus.BROADCASTED);
         } else if (job.getScheduledTime() != null) {
             job.setStatus(JobStatus.SCHEDULED);
+        }
+
+        if (job.getLocation() != null) {
+            job.setRegion(RegionHelper.fromLocation(job.getLocation()));
         }
 
         log.debug("JobService: Binding secure completion OTP code to Job envelope.");

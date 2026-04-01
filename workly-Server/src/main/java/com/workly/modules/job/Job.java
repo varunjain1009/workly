@@ -36,6 +36,12 @@ public class Job extends MongoBaseEntity {
 
     private int searchRadiusKm;
 
+    /**
+     * 1°×1° grid region derived from {@code location} on creation.
+     * Used as the MongoDB shard key — do not update after insert.
+     */
+    private String region;
+
     private String completionOtp;
     
     // Cancellation policy fields

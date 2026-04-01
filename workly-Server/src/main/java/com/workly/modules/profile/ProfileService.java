@@ -1,6 +1,7 @@
 package com.workly.modules.profile;
 
 import lombok.RequiredArgsConstructor;
+import com.workly.core.RegionHelper;
 import com.workly.modules.notification.NotificationService;
 import com.workly.modules.search.SearchServiceClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,6 +79,7 @@ public class ProfileService {
     public void updateLocation(String mobileNumber, double longitude, double latitude) {
         getWorkerProfile(mobileNumber).ifPresent(p -> {
             p.setLastLocation(new double[] { longitude, latitude });
+            p.setRegion(RegionHelper.fromCoordinates(latitude, longitude));
             workerRepository.save(p);
         });
     }

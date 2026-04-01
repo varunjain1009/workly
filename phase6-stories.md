@@ -7,7 +7,7 @@
 ---
 
 ## Story 6.1 — Region Tagging Infrastructure
-**Status:** not started
+**Status:** completed
 
 Add a `region` field (1°×1° lat/lon grid cell, e.g. `"19_72"`) to `Job` and `WorkerProfile`.
 Populate it automatically on job creation and on every MongoDB location flush.
