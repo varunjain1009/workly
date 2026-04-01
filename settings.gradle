@@ -18,5 +18,8 @@ project(':config-service').projectDir = file('workly-Config-Service')
 include ':auth-service'
 project(':auth-service').projectDir = file('workly-Auth-Service')
 
+include ':gateway'
+project(':gateway').projectDir = file('workly-Gateway')
+
 includeBuild 'workly-Help-Seeker'
 includeBuild 'workly-Help-Provider'
