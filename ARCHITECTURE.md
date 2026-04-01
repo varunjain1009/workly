@@ -2,44 +2,85 @@
 
 ## High-Level Overview
 
-Workly operates on a microservices-based architecture where specialized components handle Auth, Matching, Chat, and Search interactively.
+Workly is fully decomposed into independent microservices. All client traffic enters through the **API Gateway** (port 8000), which routes requests to the appropriate service. Services communicate asynchronously via **Kafka** and share state through a common **MongoDB replica set** and **Redis Sentinel** cluster.
 
 ```mermaid
 graph TD
     subgraph Clients [Mobile Applications]
         ClientS[Help Seeker App]
         ClientP[Help Provider App]
+        Admin[Admin Portal]
     end
 
-    subgraph Backend [Backend System]
-        API[Core Server / Gateway]
-        Chat[Chat Service]
-        Search[Search Service]
-        Config[Config Service]
-        Consumer[Notification Service]
-        
-        %% Upcoming
-        Payment[Payment Service]
-        Review[Review Service]
+    subgraph Gateway [API Gateway :8000]
+        GW[workly-Gateway]
     end
 
-    ClientS -->|HTTP / REST| API
-    ClientP -->|HTTP / REST| API
-    
-    ClientS -->|WebSocket| Chat
-    ClientP -->|WebSocket| Chat
-    
-    API -->|HTTP| Search
-    API -->|Kafka| Consumer
-    Chat -->|Kafka| Consumer
-    
+    subgraph Services [Microservices]
+        Auth[Auth Service :8085]
+        Notif[Notification Service :8086]
+        Track[Tracking Service :8087]
+        Profile[Profile Service :8088]
+        Match[Matching Service :8089]
+        Core[Core Server :8080]
+        Chat[Chat Service :8082]
+        Search[Search Service :8083]
+        Config[Config Service :8084]
+    end
+
+    subgraph Messaging [Event Bus]
+        Kafka[(Kafka)]
+    end
+
     subgraph Storage [Data Layer]
-        API --> Postgres[(Postgres)]
-        API --> Mongo[(MongoDB)]
-        Search --> Elastic[(Elasticsearch)]
-        Search --> Redis[(Redis Cache)]
+        Mongo[(MongoDB RS)]
+        Redis[(Redis Sentinel)]
+        Postgres[(PostgreSQL)]
+        Elastic[(Elasticsearch)]
     end
+
+    ClientS & ClientP & Admin -->|HTTP / REST| GW
+    ClientS & ClientP -->|WebSocket| Chat
+
+    GW --> Auth
+    GW --> Notif
+    GW --> Track
+    GW --> Profile
+    GW --> Match
+    GW --> Chat
+    GW --> Search
+    GW --> Config
+    GW -->|fallback| Core
+
+    Core -->|job.created, job.status.updated| Kafka
+    Chat -->|chat-events| Kafka
+    Profile -->|worker.available, review.submitted| Kafka
+    Kafka --> Notif
+    Kafka --> Profile
+
+    Auth & Core & Profile & Track & Match --> Mongo
+    Notif & Track --> Redis
+    Profile & Auth --> Redis
+    Core --> Postgres
+    Search --> Elastic
+    Search --> Redis
 ```
+
+## Service Responsibilities
+
+| Service | Port | Owns |
+|---|---|---|
+| workly-Gateway | 8000 | Request routing, retry |
+| workly-Auth-Service | 8085 | OTP, JWT issuance |
+| workly-Notification-Service | 8086 | FCM push, Kafka event consumers |
+| workly-Tracking-Service | 8087 | GPS hot-path (Redis Geo → MongoDB flush) |
+| workly-Profile-Service | 8088 | Worker/seeker profiles, tier management |
+| workly-Matching-Service | 8089 | Geospatial + skill worker matching |
+| workly-Server | 8080 | Jobs, Reviews, Billing, Admin API |
+| workly-Chat-Service | 8082 | WebSocket chat, offline delivery |
+| workly-Search-Service | 8083 | Skill normalisation + autocomplete |
+| workly-Config-Service | 8084 | Runtime config CRUD + Redis pub/sub |
+| workly-Common | — | Shared JWT auth, ApiResponse, base entities |
 
 ## Expertise & Spelling Normalization
 

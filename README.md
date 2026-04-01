@@ -4,15 +4,22 @@ Workly is a hyper-local blue-collar job marketplace that connects service seeker
 
 ## 📂 Project Structure
 
-| Module | Description | Tech Stack |
-| :--- | :--- | :--- |
-| **[workly-Server](workly-Server)** | Core API gateway, Auth, Job Management | Spring Boot, Mongo, Postgres, Kafka |
-| **[workly-Chat-Service](workly-Chat-Service)** | Real-time Messaging & Presence | Spring Boot, WebSocket, Redis, Mongo |
-| **[workly-Search-Service](workly-Search-Service)** | Expertise Normalization & Autocomplete | Spring Boot, Elasticsearch, Redis |
-| **[workly-Config-Service](workly-Config-Service)** | Runtime Configuration & Analytics | Spring Boot, Mongo, Redis |
-| **[workly-Admin-Portal](workly-Admin-Portal)** | Admin Dashboard for Configs | React, Vite, TailwindCSS |
-| **[workly-Help-Seeker](workly-Help-Seeker)** | Android App for Customers | Java, XML, MVVM, Room |
-| **[workly-Help-Provider](workly-Help-Provider)** | Android App for Workers | Java, XML, MVVM, Room |
+| Module | Port | Description | Tech Stack |
+| :--- | :--- | :--- | :--- |
+| **[workly-Gateway](workly-Gateway)** | 8000 | API Gateway — routes all traffic to downstream services | Spring Cloud Gateway |
+| **[workly-Auth-Service](workly-Auth-Service)** | 8085 | OTP-based authentication & JWT issuance | Spring Boot, Redis, MongoDB |
+| **[workly-Notification-Service](workly-Notification-Service)** | 8086 | FCM push notifications; Kafka consumer for job & chat events | Spring Boot, Kafka, Firebase |
+| **[workly-Tracking-Service](workly-Tracking-Service)** | 8087 | Worker GPS tracking — Redis Geo hot path + MongoDB batch flush | Spring Boot, Redis, MongoDB |
+| **[workly-Profile-Service](workly-Profile-Service)** | 8088 | Worker & seeker profile CRUD; tier upgrades via review events | Spring Boot, Kafka, MongoDB |
+| **[workly-Matching-Service](workly-Matching-Service)** | 8089 | Geospatial + skill matching REST API | Spring Boot, MongoDB |
+| **[workly-Server](workly-Server)** | 8080 | Core server — Jobs, Reviews, Billing, Admin API (server-fallback) | Spring Boot, Mongo, Postgres, Kafka |
+| **[workly-Chat-Service](workly-Chat-Service)** | 8082 | Real-time Messaging & Presence | Spring Boot, WebSocket, Redis, Mongo |
+| **[workly-Search-Service](workly-Search-Service)** | 8083 | Expertise Normalization & Autocomplete | Spring Boot, Elasticsearch, Redis |
+| **[workly-Config-Service](workly-Config-Service)** | 8084 | Runtime Configuration & Analytics | Spring Boot, Mongo, Redis |
+| **[workly-Common](workly-Common)** | — | Shared library: JWT, security filters, ApiResponse, base entities | Java library |
+| **[workly-Admin-Portal](workly-Admin-Portal)** | 5173 | Admin Dashboard for Configs | React, Vite, TailwindCSS |
+| **[workly-Help-Seeker](workly-Help-Seeker)** | — | Android App for Customers | Java, XML, MVVM, Room |
+| **[workly-Help-Provider](workly-Help-Provider)** | — | Android App for Workers | Java, XML, MVVM, Room |
 
 ## 🚀 Quick Start
 
@@ -50,15 +57,18 @@ In microservices mode, the core server delegates specific responsibilities to in
    ```properties
    app.mode=microservice
    ```
-2. Start the core server:
+2. Start all services in separate terminals:
    ```bash
-   ./gradlew :server:bootRun
-   ```
-3. In separate terminal windows, start the respective microservices:
-   ```bash
-   ./gradlew :chat-service:bootRun
-   ./gradlew :search-service:bootRun
-   ./gradlew :config-service:bootRun
+   ./gradlew :server:bootRun              # port 8080 (core fallback)
+   ./gradlew :auth-service:bootRun        # port 8085
+   ./gradlew :notification-service:bootRun # port 8086
+   ./gradlew :tracking-service:bootRun    # port 8087
+   ./gradlew :profile-service:bootRun     # port 8088
+   ./gradlew :matching-service:bootRun    # port 8089
+   ./gradlew :chat-service:bootRun        # port 8082
+   ./gradlew :search-service:bootRun      # port 8083
+   ./gradlew :config-service:bootRun      # port 8084
+   ./gradlew :gateway:bootRun             # port 8000 (all client traffic here)
    ```
 
 ### 3. Frontend (Admin)
