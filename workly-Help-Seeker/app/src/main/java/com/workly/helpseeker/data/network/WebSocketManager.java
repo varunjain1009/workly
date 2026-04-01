@@ -24,7 +24,7 @@ public class WebSocketManager {
     private WebSocket webSocket;
     private final OkHttpClient client;
     private final Gson gson;
-    private MessageListener messageListener;
+    private volatile MessageListener messageListener;
     private final AppLogger appLogger;
 
     public interface MessageListener {

@@ -77,9 +77,7 @@ public class MatchingService {
                     .toList();
 
             // Load profiles for nearby workers and filter by availability + skills
-            List<WorkerProfile> candidates = workerRepository.findAllById(
-                    workerRepository.findByMobileNumberIn(nearbyMobileNumbers).stream()
-                            .map(WorkerProfile::getId).toList());
+            List<WorkerProfile> candidates = workerRepository.findByMobileNumberIn(nearbyMobileNumbers);
 
             return candidates.stream()
                     .filter(WorkerProfile::isAvailable)

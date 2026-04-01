@@ -12,8 +12,12 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -43,8 +47,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             log.debug("JwtAuthenticationFilter: Extracted mobile: {}", mobileNumber);
             if (mobileNumber != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 if (jwtUtils.validateToken(jwt, mobileNumber)) {
+                    List<SimpleGrantedAuthority> authorities = jwtUtils.extractRoles(jwt).stream()
+                            .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                            .collect(Collectors.toList());
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            mobileNumber, null, new ArrayList<>());
+                            mobileNumber, null, authorities);
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                     log.debug("JwtAuthenticationFilter: Authentication set for mobile: {}", mobileNumber);

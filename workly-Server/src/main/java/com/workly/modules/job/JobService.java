@@ -189,7 +189,8 @@ public class JobService {
         return getSeekerJobs(mobileNumber, type, 0, 50);
     }
 
-    @Cacheable(value = "seekerJobs", key = "#mobileNumber + ':' + #type + ':' + #page + ':' + #size")
+    @Cacheable(value = "seekerJobs", key = "#mobileNumber + ':' + #type + ':' + #page + ':' + #size",
+               unless = "#result.isEmpty()")
     public List<Job> getSeekerJobs(String mobileNumber, String type, int page, int size) {
         log.debug("JobService: [ENTER] getSeekerJobs - mobile: {}, type: {}, page: {}, size: {}", mobileNumber, type, page, size);
 
@@ -243,7 +244,8 @@ public class JobService {
         return getMatchingJobs(workerMobile, 0, 20);
     }
 
-    @Cacheable(value = "availableJobs", key = "#workerMobile + ':' + #page + ':' + #size")
+    @Cacheable(value = "availableJobs", key = "#workerMobile + ':' + #page + ':' + #size",
+               unless = "#result.isEmpty()")
     public List<Job> getMatchingJobs(String workerMobile, int page, int size) {
         log.debug("JobService: [ENTER] getMatchingJobs - worker: {}, page: {}, size: {}", workerMobile, page, size);
 

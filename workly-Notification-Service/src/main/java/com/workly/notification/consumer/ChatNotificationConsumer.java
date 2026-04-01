@@ -33,6 +33,7 @@ public class ChatNotificationConsumer {
             }
         } catch (Exception e) {
             log.error("ChatNotificationConsumer: Error processing chat event", e);
+            throw new RuntimeException("Failed to process chat event", e);
         }
     }
 }

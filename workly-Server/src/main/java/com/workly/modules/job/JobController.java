@@ -3,6 +3,7 @@ package com.workly.modules.job;
 import com.workly.core.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +21,7 @@ public class JobController {
     private final com.workly.modules.promotion.PromotionService promotionService;
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<com.workly.modules.job.dto.JobDTO> createJob(
             @RequestBody com.workly.modules.job.dto.JobDTO jobDto) {
         log.debug("JobController: [ENTER] createJob - DTO params: {}", jobDto);

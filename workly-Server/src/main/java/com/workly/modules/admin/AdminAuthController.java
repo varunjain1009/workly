@@ -52,7 +52,7 @@ public class AdminAuthController {
         }
 
         log.info("Admin login successful for: {}", request.getUsername());
-        String token = jwtUtils.generateToken(request.getUsername());
+        String token = jwtUtils.generateTokenWithRole(request.getUsername(), "ADMIN");
         
         AuthResponse response = AuthResponse.builder()
                 .token(token)

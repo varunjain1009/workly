@@ -48,23 +48,35 @@ public class LocationService {
         if (dirtyWorkers == null || dirtyWorkers.isEmpty()) return;
 
         log.debug("LocationService: Flushing {} dirty locations to MongoDB", dirtyWorkers.size());
-        int flushed = 0;
 
-        for (String mobile : dirtyWorkers) {
+        // Batch-load all dirty profiles in one query instead of one per worker
+        java.util.List<String> mobileList = new java.util.ArrayList<>(dirtyWorkers);
+        java.util.Map<String, com.workly.tracking.domain.worker.WorkerProfile> profileMap =
+                workerProfileRepository.findByMobileNumberIn(mobileList).stream()
+                        .collect(java.util.stream.Collectors.toMap(
+                                com.workly.tracking.domain.worker.WorkerProfile::getMobileNumber,
+                                p -> p));
+
+        int flushed = 0;
+        java.util.List<com.workly.tracking.domain.worker.WorkerProfile> toSave = new java.util.ArrayList<>();
+        for (String mobile : mobileList) {
             try {
                 var positions = redisTemplate.opsForGeo().position(GEO_KEY, mobile);
                 if (positions != null && !positions.isEmpty() && positions.get(0) != null) {
                     var point = positions.get(0);
-                    workerProfileRepository.findByMobileNumber(mobile).stream().findFirst()
-                            .ifPresent(profile -> {
-                                profile.setLastLocation(new double[]{ point.getX(), point.getY() });
-                                workerProfileRepository.save(profile);
-                            });
-                    flushed++;
+                    com.workly.tracking.domain.worker.WorkerProfile profile = profileMap.get(mobile);
+                    if (profile != null) {
+                        profile.setLastLocation(new double[]{ point.getX(), point.getY() });
+                        toSave.add(profile);
+                        flushed++;
+                    }
                 }
             } catch (Exception e) {
-                log.error("LocationService: Failed to flush location for {}", mobile, e);
+                log.error("LocationService: Failed to read Redis position for {}", mobile, e);
             }
+        }
+        if (!toSave.isEmpty()) {
+            workerProfileRepository.saveAll(toSave);
         }
 
         redisTemplate.delete(DIRTY_SET_KEY);

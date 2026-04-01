@@ -12,6 +12,7 @@ import jakarta.annotation.PostConstruct;
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -57,6 +58,24 @@ public class JwtUtils {
         String token = createToken(claims, mobileNumber);
         log.debug("JwtUtils: [EXIT] generateToken - token generated for {}", mobileNumber);
         return token;
+    }
+
+    public String generateTokenWithRole(String subject, String role) {
+        log.debug("JwtUtils: [ENTER] generateTokenWithRole - subject: {}, role: {}", subject, role);
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role);
+        String token = createToken(claims, subject);
+        log.debug("JwtUtils: [EXIT] generateTokenWithRole - token generated");
+        return token;
+    }
+
+    public List<String> extractRoles(String token) {
+        try {
+            Object role = extractClaim(token, claims -> claims.get("role", String.class));
+            return role != null ? List.of((String) role) : List.of();
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 
     private String createToken(Map<String, Object> claims, String subject) {

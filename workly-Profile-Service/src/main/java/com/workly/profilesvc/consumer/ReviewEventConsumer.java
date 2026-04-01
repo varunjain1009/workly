@@ -64,6 +64,7 @@ public class ReviewEventConsumer {
             }
         } catch (Exception e) {
             log.error("ReviewEventConsumer: Error processing review.submitted event", e);
+            throw new RuntimeException("Failed to process review event", e);
         }
     }
 }
