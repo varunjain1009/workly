@@ -7,6 +7,8 @@ import java.util.List;
 public interface WorkerProfileRepository extends MongoRepository<WorkerProfile, String> {
     List<WorkerProfile> findByMobileNumber(String mobileNumber);
 
+    List<WorkerProfile> findByMobileNumberIn(List<String> mobileNumbers);
+
     @Query("{ 'available': true, 'skills': { $in: ?0 }, 'lastLocation': { $near: { $geometry: { type: 'Point', coordinates: [?1, ?2] }, $maxDistance: ?3 } } }")
     List<WorkerProfile> findMatchingWorkers(List<String> requiredSkills, double longitude, double latitude,
             double maxDistance);

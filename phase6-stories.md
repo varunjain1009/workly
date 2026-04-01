@@ -44,7 +44,7 @@ against a sharded cluster.
 ---
 
 ## Story 6.3 — Redis Geo as Primary Matching Source
-**Status:** not started
+**Status:** completed
 
 `MatchingService.findMatches()` currently always queries MongoDB `$near`.
 Migrate the hot path to Redis `GEORADIUS` (already written by `LocationService`),

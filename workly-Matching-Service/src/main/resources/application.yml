@@ -6,6 +6,10 @@ spring:
     mongodb:
       uri: mongodb://localhost:27017,localhost:27018,localhost:27019/workly?replicaSet=rs0
       auto-index-creation: true
+    redis:
+      sentinel:
+        master: mymaster
+        nodes: localhost:26379,localhost:26380,localhost:26381
 
 logging:
   level:
