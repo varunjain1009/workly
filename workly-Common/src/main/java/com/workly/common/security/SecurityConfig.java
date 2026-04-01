@@ -1,4 +1,4 @@
-package com.workly.modules.auth;
+package com.workly.common.security;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -20,7 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
         private final JwtAuthenticationFilter jwtAuthFilter;
-        private final com.workly.config.RateLimitFilter rateLimitFilter;
+        private final com.workly.common.security.RateLimitFilter rateLimitFilter;
 
         @Bean
         public PasswordEncoder passwordEncoder() {

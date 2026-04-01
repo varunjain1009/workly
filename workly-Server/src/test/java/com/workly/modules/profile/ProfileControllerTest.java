@@ -31,7 +31,7 @@ class ProfileControllerTest {
     private ProfileService profileService;
 
     @MockitoBean
-    private com.workly.modules.auth.JwtUtils jwtUtils;
+    private com.workly.common.security.JwtUtils jwtUtils;
 
     @MockitoBean
     private org.springframework.kafka.core.KafkaTemplate<String, Object> kafkaTemplate;

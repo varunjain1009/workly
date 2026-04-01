@@ -3,7 +3,7 @@ package com.workly.modules.admin;
 import com.workly.core.ApiResponse;
 import com.workly.core.WorklyException;
 import com.workly.modules.auth.AuthResponse;
-import com.workly.modules.auth.JwtUtils;
+import com.workly.common.security.JwtUtils;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,4 +1,4 @@
-package com.workly.modules.auth;
+package com.workly.common.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

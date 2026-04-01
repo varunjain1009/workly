@@ -1,5 +1,8 @@
 rootProject.name = 'workly'
 
+include ':common'
+project(':common').projectDir = file('workly-Common')
+
 include ':server'
 project(':server').projectDir = file('workly-Server')
 

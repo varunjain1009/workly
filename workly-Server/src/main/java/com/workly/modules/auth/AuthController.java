@@ -2,6 +2,7 @@ package com.workly.modules.auth;
 
 import com.workly.core.ApiResponse;
 import com.workly.core.WorklyException;
+import com.workly.common.security.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
