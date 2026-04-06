@@ -21,6 +21,7 @@ public class Job implements Serializable {
     private String seekerMobileNumber;
     private String workerMobileNumber;
     private String workerName;
+    private String seekerName;
 
     public Job() {
     }
@@ -182,5 +183,13 @@ public class Job implements Serializable {
 
     public void setWorkerName(String workerName) {
         this.workerName = workerName;
+    }
+
+    public String getSeekerName() {
+        return seekerName;
+    }
+
+    public void setSeekerName(String seekerName) {
+        this.seekerName = seekerName;
     }
 }

@@ -102,6 +102,7 @@ public class ProfileRepository {
             public void onResponse(Call<ApiResponse<Profile>> call, Response<ApiResponse<Profile>> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
                     Profile p = response.body().getData();
+                    appLogger.d(TAG, "ProfileRepository: updateProfile success — skills from server: " + p.getSkills());
                     // Sync skills list back to expertise string
                     if (p.getSkills() != null && !p.getSkills().isEmpty()) {
                         StringBuilder sb = new StringBuilder();
@@ -115,11 +116,18 @@ public class ProfileRepository {
                     } else {
                         p.setExpertise("");
                     }
+                    // Keep existing Room id so REPLACE triggers correctly
                     executorService.execute(() -> {
-                        profileDao.clearProfile();
+                        Profile existing = profileDao.getProfileSync();
+                        if (existing != null) {
+                            p.setId(existing.getId());
+                        }
                         profileDao.insertProfile(p);
+                        appLogger.d(TAG, "ProfileRepository: Room DB updated with new profile — skills: " + p.getSkills());
                     });
                     prefs.edit().putLong("last_profile_fetch_time", System.currentTimeMillis()).apply();
+                } else {
+                    appLogger.e(TAG, "ProfileRepository: updateProfile failed — HTTP " + response.code());
                 }
             }
 
@@ -144,6 +152,26 @@ public class ProfileRepository {
             @Override
             public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
                 callback.onFailure(call, t);
+            }
+        });
+    }
+
+    public void updateLocation(double latitude, double longitude, Runnable onComplete) {
+        appLogger.d(TAG, "ProfileRepository: Pushing location to server — lat: " + latitude + ", lon: " + longitude);
+        java.util.Map<String, Double> loc = new java.util.HashMap<>();
+        loc.put("latitude", latitude);
+        loc.put("longitude", longitude);
+        apiService.updateLocation(loc).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                appLogger.d(TAG, "ProfileRepository: Location push response — HTTP " + response.code());
+                if (onComplete != null) onComplete.run();
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                appLogger.e(TAG, "ProfileRepository: Location push failed: " + t.getMessage(), t);
+                if (onComplete != null) onComplete.run();
             }
         });
     }

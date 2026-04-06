@@ -5,5 +5,5 @@ import java.util.List;
 
 public interface OutboxEventRepository extends MongoRepository<OutboxEvent, String> {
     List<OutboxEvent> findByProcessedFalseOrderByCreatedAtAsc();
-    List<OutboxEvent> findTop100ByProcessedFalseOrderByCreatedAtAsc();
+    List<OutboxEvent> findTop100ByProcessedFalseAndFailedFalseOrderByCreatedAtAsc();
 }

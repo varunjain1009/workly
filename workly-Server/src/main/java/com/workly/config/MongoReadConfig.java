@@ -29,6 +29,20 @@ public class MongoReadConfig {
     @Value("${spring.data.mongodb.uri}")
     private String mongoUri;
 
+    /**
+     * Explicit primary MongoTemplate so Spring Data repositories always find a
+     * bean named 'mongoTemplate', regardless of the secondary template below.
+     * Without this, MongoDataAutoConfiguration backs off on
+     * {@code @ConditionalOnMissingBean(MongoOperations.class)} because the
+     * secondary template already satisfies the condition, leaving repositories
+     * with no 'mongoTemplate' bean to bind to.
+     */
+    @Bean
+    @org.springframework.context.annotation.Primary
+    public MongoTemplate mongoTemplate(MongoDatabaseFactory factory, MongoConverter converter) {
+        return new MongoTemplate(factory, converter);
+    }
+
     @Bean(name = "secondaryMongoTemplate")
     public MongoTemplate secondaryMongoTemplate(MongoClient mongoClient,
             MongoDatabaseFactory primaryFactory,

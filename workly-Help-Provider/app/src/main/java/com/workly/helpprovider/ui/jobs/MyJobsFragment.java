@@ -13,8 +13,10 @@ import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.textview.MaterialTextView;
 
 import com.workly.helpprovider.R;
@@ -36,6 +38,16 @@ public class MyJobsFragment extends Fragment implements JobAdapter.OnJobClickLis
     private SwipeRefreshLayout swipeRefresh;
     private RecyclerView rvJobs;
     private MaterialTextView tvEmpty;
+    private String currentType = "active";
+
+    private final android.content.BroadcastReceiver jobsUpdatedReceiver = new android.content.BroadcastReceiver() {
+        @Override
+        public void onReceive(android.content.Context context, android.content.Intent intent) {
+            if ("PROVIDER_MY_JOBS_UPDATED".equals(intent.getAction())) {
+                viewModel.loadMyJobs(currentType);
+            }
+        }
+    };
 
     @Inject
     com.workly.helpprovider.util.AppLogger appLogger;
@@ -55,14 +67,28 @@ public class MyJobsFragment extends Fragment implements JobAdapter.OnJobClickLis
         rvJobs = view.findViewById(R.id.rv_my_jobs);
         tvEmpty = view.findViewById(R.id.tv_my_jobs_empty);
 
-        viewModel = new ViewModelProvider(this).get(MyJobsViewModel.class);
+        viewModel = new ViewModelProvider(requireActivity()).get(MyJobsViewModel.class);
 
         setupRecyclerView();
         setupObservers();
+        setupTabs(view);
 
         swipeRefresh.setOnRefreshListener(() -> {
             appLogger.d(TAG, "MyJobsFragment(Provider): Manual refresh triggered");
-            viewModel.loadMyJobs();
+            viewModel.loadMyJobs(currentType);
+        });
+    }
+
+    private void setupTabs(@NonNull View view) {
+        MaterialButtonToggleGroup toggle = view.findViewById(R.id.toggle_my_job_type);
+        updateEmptyText();
+        toggle.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (!isChecked) {
+                return;
+            }
+            currentType = checkedId == R.id.btn_completed_jobs ? "completed" : "active";
+            updateEmptyText();
+            viewModel.loadMyJobs(currentType);
         });
     }
 
@@ -85,6 +111,7 @@ public class MyJobsFragment extends Fragment implements JobAdapter.OnJobClickLis
                 jobAdapter.submitList(null);
                 rvJobs.setVisibility(View.GONE);
                 tvEmpty.setVisibility(View.VISIBLE);
+                updateEmptyText();
             }
         });
 
@@ -109,5 +136,25 @@ public class MyJobsFragment extends Fragment implements JobAdapter.OnJobClickLis
         bundle.putSerializable("job", job);
         Navigation.findNavController(requireView())
                 .navigate(R.id.action_my_jobs_to_jobDetails, bundle);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        LocalBroadcastManager.getInstance(requireContext())
+                .registerReceiver(jobsUpdatedReceiver, new android.content.IntentFilter("PROVIDER_MY_JOBS_UPDATED"));
+        viewModel.loadMyJobs(currentType);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        LocalBroadcastManager.getInstance(requireContext()).unregisterReceiver(jobsUpdatedReceiver);
+    }
+
+    private void updateEmptyText() {
+        tvEmpty.setText("completed".equals(currentType)
+                ? "No completed jobs yet."
+                : "No active jobs yet.\nAccept a job to see it here.");
     }
 }

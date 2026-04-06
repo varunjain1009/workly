@@ -1,10 +1,12 @@
 package com.workly.modules.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.workly.common.security.JwtUtils;
+import com.workly.modules.profile.ProfileService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -16,7 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@WebMvcTest(AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 class AuthControllerTest {
@@ -24,33 +26,20 @@ class AuthControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @MockitoBean
     private OtpService otpService;
 
     @MockitoBean
     private JwtUtils jwtUtils;
 
-    // Mock other infra dependencies that might be loaded in @SpringBootTest
     @MockitoBean
-    private org.springframework.kafka.core.KafkaTemplate<String, Object> kafkaTemplate;
+    private ProfileService profileService;
 
     @MockitoBean
     private org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
-
-    @MockitoBean
-    private com.workly.modules.profile.WorkerProfileRepository workerProfileRepository;
-
-    @MockitoBean
-    private com.workly.modules.profile.SkillSeekerProfileRepository skillSeekerProfileRepository;
-
-    @MockitoBean
-    private com.workly.modules.job.JobRepository jobRepository;
-
-    @MockitoBean
-    private com.workly.modules.review.ReviewRepository reviewRepository;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @Test
     void requestOtp_ShouldReturnSuccess() throws Exception {

@@ -1,10 +1,13 @@
 package com.workly.modules.job;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.workly.common.security.JwtUtils;
+import com.workly.modules.profile.ProfileService;
+import com.workly.modules.promotion.PromotionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -23,7 +26,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@WebMvcTest(JobController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 class JobControllerTest {
@@ -31,32 +34,23 @@ class JobControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @MockitoBean
     private JobService jobService;
 
     @MockitoBean
-    private com.workly.common.security.JwtUtils jwtUtils;
+    private ProfileService profileService;
 
     @MockitoBean
-    private org.springframework.kafka.core.KafkaTemplate<String, Object> kafkaTemplate;
+    private PromotionService promotionService;
+
+    @MockitoBean
+    private JwtUtils jwtUtils;
 
     @MockitoBean
     private org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
-
-    @MockitoBean
-    private com.workly.modules.profile.WorkerProfileRepository workerProfileRepository;
-
-    @MockitoBean
-    private com.workly.modules.profile.SkillSeekerProfileRepository skillSeekerProfileRepository;
-
-    @MockitoBean
-    private JobRepository jobRepository;
-
-    @MockitoBean
-    private com.workly.modules.review.ReviewRepository reviewRepository;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @Test
     @WithMockUser(username = "1234567890")
@@ -69,7 +63,7 @@ class JobControllerTest {
         mockMvc.perform(post("/api/v1/jobs")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(job)))
-                .andExpect(status().isOk())
+                .andExpect(status().is2xxSuccessful())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.title").value("Test Job"));
     }

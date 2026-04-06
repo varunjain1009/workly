@@ -15,4 +15,6 @@ public class OutboxEvent {
     private Object payload; // Typically serialized JSON, but can map to JobEvent directly
     private LocalDateTime createdAt = LocalDateTime.now();
     private boolean processed = false;
+    private int retryCount = 0;
+    private boolean failed = false;
 }

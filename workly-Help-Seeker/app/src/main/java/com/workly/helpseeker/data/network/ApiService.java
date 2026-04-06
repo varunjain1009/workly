@@ -59,6 +59,9 @@ public interface ApiService {
     @GET("profiles/seeker")
     Call<ApiResponse<User>> getSeekerProfile();
 
+    @POST("profiles/device-token")
+    Call<ApiResponse<Void>> updateDeviceToken(@Body java.util.Map<String, String> tokenMap);
+
     @GET("skills/autocomplete")
     Call<java.util.List<String>> getSkillSuggestions(@retrofit2.http.Query("query") String query);
 }

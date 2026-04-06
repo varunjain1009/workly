@@ -210,6 +210,7 @@ public class WorkerDiscoveryFragment extends Fragment {
     private void confirmAndPostJob(Worker worker) {
         appLogger.d(TAG, "WorkerDiscoveryFragment: [ENTER] confirmAndPostJob - workerId: " + worker.getId() + ", jobTitle: " + pendingJob.getTitle());
         pendingJob.setWorkerId(worker.getId());
+        pendingJob.setWorkerMobileNumber(worker.getMobileNumber());
         pendingJob.setAssignmentMode(com.workly.helpseeker.data.model.AssignmentMode.MANUAL_SELECT);
 
         apiService.postJob(pendingJob).enqueue(new Callback<ApiResponse<com.workly.helpseeker.data.model.Job>>() {

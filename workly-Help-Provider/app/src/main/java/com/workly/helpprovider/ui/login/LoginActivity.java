@@ -1,19 +1,30 @@
 package com.workly.helpprovider.ui.login;
 
+import android.Manifest;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.snackbar.Snackbar;
 
 import com.workly.helpprovider.databinding.ActivityLoginBinding;
 import com.workly.helpprovider.ui.main.MainActivity;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import dagger.hilt.android.AndroidEntryPoint;
 
@@ -23,6 +34,25 @@ public class LoginActivity extends AppCompatActivity {
     private ActivityLoginBinding binding;
     private LoginViewModel viewModel;
     private CountDownTimer countDownTimer;
+
+    private static final String[] REQUIRED_PERMISSIONS = {
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.READ_SMS
+    };
+
+    private final ActivityResultLauncher<String[]> permissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), granted -> {
+                boolean locationGranted = Boolean.TRUE.equals(granted.get(Manifest.permission.ACCESS_FINE_LOCATION))
+                        || Boolean.TRUE.equals(granted.get(Manifest.permission.ACCESS_COARSE_LOCATION));
+                boolean smsGranted = Boolean.TRUE.equals(granted.get(Manifest.permission.RECEIVE_SMS))
+                        || Boolean.TRUE.equals(granted.get(Manifest.permission.READ_SMS));
+                android.util.Log.d(TAG, "LoginActivity(Provider): permission result — location=" + locationGranted + " sms=" + smsGranted);
+                if (!locationGranted || !smsGranted) {
+                    showPermissionDeniedDialog();
+                }
+            });
     // private final long resendDelayMs = 300000; // Removed final/hardcoded
 
     @javax.inject.Inject
@@ -44,9 +74,10 @@ public class LoginActivity extends AppCompatActivity {
         binding.loadingOverlay.setVisibility(View.VISIBLE);
 
         appLogger.d(TAG, "LoginActivity started. No saved session — showing login fields.");
-        binding.btnSendOtp.setText("READY - ENTER PHONE");
+        binding.btnSendOtp.setText("GET OTP");
         binding.getRoot().setBackgroundColor(android.graphics.Color.LTGRAY);
 
+        requestRequiredPermissions();
         configManager.fetchConfig();
         configManager.getOnConfigLoaded().observe(this, config -> {
             appLogger.d(TAG, "Config loaded, enabling UI.");
@@ -56,6 +87,36 @@ public class LoginActivity extends AppCompatActivity {
 
         setupListeners();
         observeViewModel();
+    }
+
+    private void requestRequiredPermissions() {
+        List<String> missing = new ArrayList<>();
+        for (String perm : REQUIRED_PERMISSIONS) {
+            if (ContextCompat.checkSelfPermission(this, perm) != PackageManager.PERMISSION_GRANTED) {
+                missing.add(perm);
+            }
+        }
+        if (!missing.isEmpty()) {
+            android.util.Log.d(TAG, "LoginActivity(Provider): requesting " + missing.size() + " missing permissions");
+            permissionLauncher.launch(missing.toArray(new String[0]));
+        } else {
+            android.util.Log.d(TAG, "LoginActivity(Provider): all required permissions already granted");
+        }
+    }
+
+    private void showPermissionDeniedDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Permissions Required")
+                .setMessage("Location and SMS permissions are required for Workly to function. Please grant them in Settings.")
+                .setCancelable(false)
+                .setPositiveButton("Open Settings", (dialog, which) -> {
+                    Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                    intent.setData(android.net.Uri.fromParts("package", getPackageName(), null));
+                    startActivity(intent);
+                    finish();
+                })
+                .setNegativeButton("Quit", (dialog, which) -> finish())
+                .show();
     }
 
     // Helper to get delay dynamically

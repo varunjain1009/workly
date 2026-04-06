@@ -1,6 +1,9 @@
 package com.workly.helpprovider.ui.jobs;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,6 +13,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
+import com.google.android.gms.location.LocationServices;
 import com.google.android.material.snackbar.Snackbar;
 
 import com.workly.helpprovider.data.model.Job;
@@ -61,24 +65,32 @@ public class JobDetailsFragment extends Fragment {
             }
         });
 
+        // Enable Complete only after 4-digit OTP is entered
+        binding.etOtp.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                binding.btnCompleteJob.setEnabled(s.length() == 4 && s.toString().matches("\\d{4}"));
+            }
+            @Override public void afterTextChanged(Editable s) {}
+        });
+
         binding.btnCompleteJob.setOnClickListener(v -> {
             if (job != null) {
                 String otp = binding.etOtp.getText().toString();
-                if (otp.length() == 4 && otp.matches("\\d{4}")) {
-                    appLogger.d(TAG, "JobDetailsFragment(Provider): Completing job " + job.getId() + " with OTP");
-                    viewModel.completeJob(job.getId(), otp);
-                } else {
-                    appLogger.d(TAG, "JobDetailsFragment(Provider): Invalid OTP: " + otp.length() + " chars");
-                    Snackbar.make(binding.getRoot(), "Please enter a valid 4-digit OTP", Snackbar.LENGTH_LONG).show();
-                }
+                appLogger.d(TAG, "JobDetailsFragment(Provider): Completing job " + job.getId() + " with OTP");
+                viewModel.completeJob(job.getId(), otp);
             }
         });
 
         // specific observers for this fragment
         viewModel.getAcceptJobStatus().observe(getViewLifecycleOwner(), success -> {
             if (success) {
-                Snackbar.make(binding.getRoot(), "Job Accepted Successfully!", Snackbar.LENGTH_SHORT).show();
-                // Navigate back
+                Snackbar.make(binding.getRoot(), "Job Accepted!", Snackbar.LENGTH_SHORT).show();
+                // Push accepted job into My Jobs list so the tab updates without a refresh
+                if (job != null) {
+                    job.setStatus(JobStatus.ASSIGNED);
+                    new ViewModelProvider(requireActivity()).get(MyJobsViewModel.class).addJobLocal(job);
+                }
                 if (getActivity() != null) {
                     getActivity().onBackPressed();
                 }
@@ -99,16 +111,44 @@ public class JobDetailsFragment extends Fragment {
         });
     }
 
+    @SuppressLint("MissingPermission")
     private void displayJobDetails(Job job) {
         binding.tvTitle.setText(job.getTitle());
         binding.tvStatus.setText("Status: " + job.getStatus());
         binding.tvDescription.setText(job.getDescription());
         binding.tvSkill.setText(job.getRequiredSkill());
+
         if (job.getLocation() != null) {
             binding.tvLocation.setText(job.getLocation().getAddress());
+
+            // Show distance from provider's current location to job
+            if (job.getLocation().getLatitude() != 0 || job.getLocation().getLongitude() != 0) {
+                LocationServices.getFusedLocationProviderClient(requireContext())
+                        .getLastLocation()
+                        .addOnSuccessListener(myLoc -> {
+                            if (myLoc != null && binding != null) {
+                                float[] results = new float[1];
+                                android.location.Location.distanceBetween(
+                                        myLoc.getLatitude(), myLoc.getLongitude(),
+                                        job.getLocation().getLatitude(), job.getLocation().getLongitude(),
+                                        results);
+                                float distKm = results[0] / 1000f;
+                                binding.tvDistance.setText(String.format(Locale.getDefault(), "%.1f km away", distKm));
+                                binding.tvDistance.setVisibility(View.VISIBLE);
+                            }
+                        });
+            }
         }
-        if (job.getBudget() != null) {
-            binding.tvBudget.setText(String.format("$%.2f", job.getBudget()));
+
+        // Seeker info — always show on My Jobs; hide on available jobs where ASSIGNED hasn't happened
+        if (job.getSeekerMobileNumber() != null) {
+            binding.tvSeekerLabel.setVisibility(View.VISIBLE);
+            binding.tvSeekerPhone.setText("Phone: " + job.getSeekerMobileNumber());
+            binding.tvSeekerPhone.setVisibility(View.VISIBLE);
+            if (job.getSeekerName() != null && !job.getSeekerName().isEmpty()) {
+                binding.tvSeekerName.setText(job.getSeekerName());
+                binding.tvSeekerName.setVisibility(View.VISIBLE);
+            }
         }
 
         if (job.getPreferredDateTime() > 0 && job.getStatus() == JobStatus.SCHEDULED) {
@@ -120,7 +160,9 @@ public class JobDetailsFragment extends Fragment {
         }
 
         // Hide accept button if already accepted or cancelled
-        if (job.getStatus() != JobStatus.BROADCASTED && job.getStatus() != JobStatus.SCHEDULED) {
+        if (job.getStatus() != JobStatus.BROADCASTED
+                && job.getStatus() != JobStatus.SCHEDULED
+                && job.getStatus() != JobStatus.PENDING_ACCEPTANCE) {
             binding.btnAcceptJob.setVisibility(View.GONE);
         }
 

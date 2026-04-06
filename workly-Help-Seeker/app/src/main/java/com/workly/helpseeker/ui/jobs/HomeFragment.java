@@ -75,29 +75,27 @@ public class HomeFragment extends Fragment {
                     currentJobType = "past";
                     binding.tvEmptyState.setText("No past jobs found");
                 }
-                // Use cache if fresh — ViewModel decides whether to hit network
-                viewModel.loadJobs(currentJobType, false);
+                viewModel.loadJobs(currentJobType, true);
             }
         });
 
         // Initial load
-        viewModel.loadJobs(currentJobType, false);
+        viewModel.loadJobs(currentJobType, true);
 
         binding.fabPostJob.setOnClickListener(v -> {
             Navigation.findNavController(v).navigate(R.id.action_home_to_postJob);
         });
     }
 
-    private android.content.BroadcastReceiver jobAcceptedReceiver = new android.content.BroadcastReceiver() {
+    private android.content.BroadcastReceiver jobsUpdatedReceiver = new android.content.BroadcastReceiver() {
         @Override
         public void onReceive(android.content.Context context, android.content.Intent intent) {
-            if ("JOB_ACCEPTED_EVENT".equals(intent.getAction())) {
-                appLogger.d(TAG, "HomeFragment(Seeker): JOB_ACCEPTED_EVENT received, refreshing active jobs");
+            if ("SEEKER_JOBS_UPDATED_EVENT".equals(intent.getAction())) {
+                appLogger.d(TAG, "HomeFragment(Seeker): jobs update received, refreshing caches");
                 if (viewModel != null) {
                     viewModel.invalidateCache("active");
-                    if ("active".equals(currentJobType)) {
-                        viewModel.loadJobs("active", true);
-                    }
+                    viewModel.invalidateCache("past");
+                    viewModel.loadJobs(currentJobType, true);
                 }
             }
         }
@@ -107,22 +105,21 @@ public class HomeFragment extends Fragment {
     public void onStart() {
         super.onStart();
         androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(requireContext())
-                .registerReceiver(jobAcceptedReceiver, new android.content.IntentFilter("JOB_ACCEPTED_EVENT"));
+                .registerReceiver(jobsUpdatedReceiver, new android.content.IntentFilter("SEEKER_JOBS_UPDATED_EVENT"));
     }
 
     @Override
     public void onStop() {
         super.onStop();
         androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(requireContext())
-                .unregisterReceiver(jobAcceptedReceiver);
+                .unregisterReceiver(jobsUpdatedReceiver);
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        // Let ViewModel's staleness threshold decide whether to fetch
         if (viewModel != null) {
-            viewModel.loadJobs(currentJobType, false);
+            viewModel.loadJobs(currentJobType, true);
         }
     }
 

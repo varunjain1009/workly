@@ -40,9 +40,11 @@ public class JobController {
         }
         job.setBudget(jobDto.getBudget() != null ? jobDto.getBudget() : 0.0);
         job.setStatus(jobDto.getStatus());
-        job.setImmediate(jobDto.isImmediate());
         job.setJobType(jobDto.getJobType());
+        // Infer immediate from jobType when the boolean field is not explicitly set
+        job.setImmediate(jobDto.isImmediate() || jobDto.getJobType() == JobType.IMMEDIATE);
         job.setAssignmentMode(jobDto.getAssignmentMode());
+        job.setWorkerMobileNumber(jobDto.getWorkerMobileNumber());
         if (jobDto.getPreferredDateTime() > 0) {
             job.setScheduledTime(java.time.Instant.ofEpochMilli(jobDto.getPreferredDateTime())
                     .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime());
@@ -93,11 +95,12 @@ public class JobController {
 
     @GetMapping("/worker")
     public ApiResponse<List<com.workly.modules.job.dto.JobDTO>> getWorkerJobs(
+            @RequestParam(required = false) String type,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String mobileNumber = auth.getName();
-        return ApiResponse.success(jobService.getWorkerJobs(mobileNumber, page, Math.min(size, 50)).stream().map(this::toDto).toList(),
+        return ApiResponse.success(jobService.getWorkerJobs(mobileNumber, type, page, Math.min(size, 50)).stream().map(this::toDto).toList(),
                 "Jobs retrieved");
     }
 
@@ -211,6 +214,13 @@ public class JobController {
         // Identity fields
         dto.setSeekerMobileNumber(job.getSeekerMobileNumber());
         dto.setCompletionOtp(job.getCompletionOtp());
+        dto.setWorkerId(job.getWorkerMobileNumber());
+
+        // Seeker name — fetch from seeker profile
+        if (job.getSeekerMobileNumber() != null) {
+            profileService.getSeekerProfile(job.getSeekerMobileNumber())
+                    .ifPresent(sp -> dto.setSeekerName(sp.getName()));
+        }
 
         // Worker details — only populated after assignment
         if (job.getWorkerMobileNumber() != null) {

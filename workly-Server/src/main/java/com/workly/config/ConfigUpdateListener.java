@@ -2,6 +2,7 @@ package com.workly.config;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
 
 @Service
+@Profile("!test")
 @RequiredArgsConstructor
 @Slf4j
 public class ConfigUpdateListener implements MessageListener {

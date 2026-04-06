@@ -13,7 +13,8 @@ spring:
       ddl-auto: create-drop
   data:
     mongodb:
-      uri: mongodb://localhost:27017/test
+      uri: mongodb://localhost:27017/workly?directConnection=true
+      auto-index-creation: false
     redis:
       host: localhost
       port: 6379
@@ -27,3 +28,10 @@ auth:
 
 monetisation:
   enabled: true
+
+management:
+  health:
+    redis:
+      enabled: false
+    elasticsearch:
+      enabled: false

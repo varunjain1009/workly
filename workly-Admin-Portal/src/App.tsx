@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
-import { Settings, Activity, LayoutDashboard, Database, BarChart2, Lock, LogOut } from 'lucide-react';
+import { Settings, Activity, LayoutDashboard, Database, BarChart2, Lock, LogOut, HeartPulse } from 'lucide-react';
 import { useState } from 'react';
 import ChangePasswordModal from './components/ChangePasswordModal';
 
@@ -8,6 +8,7 @@ import AuditLogs from './pages/AuditLogs';
 import Skills from './pages/Skills';
 import Dashboard from './pages/Dashboard';
 import CustomReports from './pages/CustomReports';
+import Health from './pages/Health';
 import Login from './pages/Login';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -62,6 +63,11 @@ function AdminLayout({ activeTab, setActiveTab, setShowChangePassword }: any) {
               <BarChart2 size={20} />
               Reports
             </Link>
+            <Link to="/health" onClick={() => setActiveTab('health')}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'health' ? 'bg-blue-600' : 'hover:bg-slate-800'}`}>
+              <HeartPulse size={20} />
+              Health
+            </Link>
           </nav>
           <div className="p-4 border-t border-slate-700 space-y-2">
             <button 
@@ -96,6 +102,7 @@ function AdminLayout({ activeTab, setActiveTab, setShowChangePassword }: any) {
             <Route path="/configs" element={<Configs />} />
             <Route path="/audit" element={<AuditLogs />} />
             <Route path="/reports" element={<CustomReports />} />
+            <Route path="/health" element={<Health />} />
           </Routes>
         </main>
       </div>

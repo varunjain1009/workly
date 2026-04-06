@@ -38,10 +38,11 @@ public class LocationService {
         redisTemplate.opsForGeo().add(GEO_KEY,
                 new org.springframework.data.geo.Point(longitude, latitude), mobileNumber);
 
-        // Mark as dirty for the next batch-flush cycle
-        redisTemplate.opsForSet().add(DIRTY_SET_KEY, mobileNumber);
-
-        log.debug("LocationService: [EXIT] updateWorkerLocation - Written to Redis Geo + dirty set");
+        // Persist to MongoDB immediately so $near queries are consistent without
+        // waiting for the 60-second batch flush.  The dirty-set flush still runs as
+        // a safety net for any entry that was missed.
+        profileService.updateLocation(mobileNumber, longitude, latitude);
+        log.debug("LocationService: [EXIT] updateWorkerLocation - Written to Redis Geo + MongoDB (lon={}, lat={})", longitude, latitude);
     }
 
     /**

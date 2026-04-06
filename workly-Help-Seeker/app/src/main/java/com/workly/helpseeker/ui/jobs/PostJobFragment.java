@@ -290,20 +290,47 @@ public class PostJobFragment extends Fragment {
         }
     }
 
+    @android.annotation.SuppressLint("MissingPermission")
     private void postJobWithLocation() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            fusedLocationClient.getLastLocation()
-                    .addOnSuccessListener(requireActivity(), location -> {
-                        if (location != null) {
-                            postJobWithCoordinates(location.getLatitude(), location.getLongitude());
+        boolean hasFine = ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+        boolean hasCoarse = ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+        android.util.Log.d(TAG, "PostJobFragment(Seeker): postJobWithLocation — fine=" + hasFine + " coarse=" + hasCoarse);
+
+        if (!hasFine && !hasCoarse) {
+            android.util.Log.w(TAG, "PostJobFragment(Seeker): no location permission — posting with 0,0");
+            postJobWithCoordinates(0.0, 0.0);
+            return;
+        }
+
+        android.util.Log.d(TAG, "PostJobFragment(Seeker): calling getLastLocation() via FusedLocationClient");
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(requireActivity(), location -> {
+                    if (location != null) {
+                        android.util.Log.d(TAG, "PostJobFragment(Seeker): GPS fix — lat=" + location.getLatitude()
+                                + " lon=" + location.getLongitude() + " accuracy=" + location.getAccuracy() + "m");
+                        postJobWithCoordinates(location.getLatitude(), location.getLongitude());
+                    } else {
+                        android.util.Log.w(TAG, "PostJobFragment(Seeker): getLastLocation() null — trying network provider");
+                        android.location.LocationManager lm = (android.location.LocationManager)
+                                requireContext().getSystemService(android.content.Context.LOCATION_SERVICE);
+                        android.location.Location netLoc = lm != null
+                                ? lm.getLastKnownLocation(android.location.LocationManager.NETWORK_PROVIDER) : null;
+                        if (netLoc != null) {
+                            android.util.Log.d(TAG, "PostJobFragment(Seeker): network/WiFi fix — lat=" + netLoc.getLatitude()
+                                    + " lon=" + netLoc.getLongitude() + " accuracy=" + netLoc.getAccuracy() + "m");
+                            postJobWithCoordinates(netLoc.getLatitude(), netLoc.getLongitude());
                         } else {
+                            android.util.Log.e(TAG, "PostJobFragment(Seeker): GPS and network both null — posting with 0,0");
                             postJobWithCoordinates(0.0, 0.0);
                         }
-                    })
-                    .addOnFailureListener(e -> postJobWithCoordinates(0.0, 0.0));
-        } else {
-            postJobWithCoordinates(0.0, 0.0);
-        }
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    android.util.Log.e(TAG, "PostJobFragment(Seeker): getLastLocation() failed: " + e.getMessage());
+                    postJobWithCoordinates(0.0, 0.0);
+                });
     }
 
     private void postJobWithCoordinates(double lat, double lon) {

@@ -54,7 +54,6 @@ public class ProfileService {
         });
     }
 
-    @Cacheable(value = "workerProfiles", key = "#mobileNumber", unless = "#result == null || !#result.isPresent()")
     public Optional<WorkerProfile> getWorkerProfile(String mobileNumber) {
         log.debug("ProfileService: Cache MISS for workerProfile: {}", mobileNumber);
         java.util.List<WorkerProfile> profiles = workerRepository.findByMobileNumber(mobileNumber);

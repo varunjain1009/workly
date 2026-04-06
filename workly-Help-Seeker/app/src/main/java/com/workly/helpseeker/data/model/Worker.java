@@ -4,6 +4,7 @@ import com.google.gson.annotations.SerializedName;
 
 public class Worker {
     private String id;
+    private String mobileNumber;
     private String name;
     private double skillMatch;
     private double distanceKm;
@@ -29,6 +30,14 @@ public class Worker {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getMobileNumber() {
+        return mobileNumber;
+    }
+
+    public void setMobileNumber(String mobileNumber) {
+        this.mobileNumber = mobileNumber;
     }
 
     public String getName() {

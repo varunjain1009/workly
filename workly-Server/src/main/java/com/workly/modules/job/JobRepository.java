@@ -18,6 +18,8 @@ public interface JobRepository extends MongoRepository<Job, String> {
 
     List<Job> findByStatusIn(List<JobStatus> statuses);
 
+    List<Job> findByStatusIn(List<JobStatus> statuses, org.springframework.data.domain.Pageable pageable);
+
     List<Job> findBySeekerMobileNumberAndStatusIn(String mobileNumber, List<JobStatus> statuses);
 
     // --- Paginated variants ---

@@ -59,8 +59,16 @@ public class JobRepository {
     }
 
     /**
+     * Force-fetches available jobs, bypassing all throttle / staleness checks.
+     * Use after a location push so the server's fresh coordinates are always used.
+     */
+    public void forceRefreshAvailableJobs() {
+        appLogger.d(TAG, "JobRepository: forceRefreshAvailableJobs() — bypassing throttle");
+        fetchAvailableJobs();
+    }
+
+    /**
      * Refreshes available jobs from network, respecting staleness threshold.
-     * @param force If true, ignores staleness and always fetches.
      */
     public void refreshAvailableJobs(boolean isManualPull) {
         long intervalMs = getThrottleIntervalMs();
@@ -82,22 +90,30 @@ public class JobRepository {
 
         appLogger.d(TAG, "JobRepository: Fetching available jobs from network."
                 + (isManualPull ? " (manual pull)" : " (stale/missing)"));
+        fetchAvailableJobs();
+    }
+
+    private void fetchAvailableJobs() {
         apiService.getAvailableJobs().enqueue(new Callback<ApiResponse<List<Job>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<Job>>> call, Response<ApiResponse<List<Job>>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<Job> jobs = response.body().getData();
                     appLogger.d(TAG, "JobRepository: Successfully retrieved " + jobs.size() + " available jobs.");
-                    availableJobsData.setValue(jobs);
+                    availableJobsData.postValue(jobs);
                     lastFetchTime = System.currentTimeMillis();
                 } else {
                     appLogger.e(TAG, "JobRepository: Failed to retrieve jobs. Status code: " + response.code());
+                    List<Job> current = availableJobsData.getValue();
+                    availableJobsData.postValue(current != null ? current : new ArrayList<>());
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<List<Job>>> call, Throwable t) {
                 appLogger.e(TAG, "JobRepository: Network error fetching available jobs: " + t.getMessage(), t);
+                List<Job> current = availableJobsData.getValue();
+                availableJobsData.postValue(current != null ? current : new ArrayList<>());
             }
         });
     }

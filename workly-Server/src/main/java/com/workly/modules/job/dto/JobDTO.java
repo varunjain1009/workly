@@ -34,7 +34,9 @@ public class JobDTO {
 
     // Assigned job details
     private String completionOtp;
+    private String workerId;
     private String workerMobileNumber;
     private String workerName;
     private String seekerMobileNumber;
+    private String seekerName;
 }

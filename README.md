@@ -165,6 +165,37 @@ If you are testing from a physical Android Device, ensure your host machine IP (
 
 If testing on the **Android Emulator**, use the specialized localhost bridge: `192.168.31.112`.
 
+## 📊 Observability Stack
+
+The docker-compose starts three observability services automatically alongside the infrastructure. No extra setup is needed for local development.
+
+| Tool | URL | Purpose |
+|---|---|---|
+| **Prometheus** | http://localhost:9090 | Scrapes `/actuator/prometheus` from all Spring Boot services every 10 s. Stores time-series metrics: JVM memory, GC, thread counts, HTTP request rates, custom `location.redis.geo.size` gauge, and cache hit/miss counters. Query metrics via the built-in expression browser. |
+| **Grafana** | http://localhost:3000 | Dashboarding layer on top of Prometheus. Default credentials: `admin / admin`. Add Prometheus as a data source (`http://prometheus:9090`) to build dashboards from the scraped metrics. |
+| **Jaeger** | http://localhost:16686 | Distributed tracing UI. The `workly-server` exports OpenTelemetry spans via OTLP to Jaeger (`localhost:4318`). Use it to trace a single request across service boundaries and identify latency hotspots. Requires `micrometer-tracing-bridge-otel` + `opentelemetry-exporter-otlp` (already in `workly-Server/build.gradle`). |
+
+### What each service exposes
+
+Every Spring Boot service (`workly-server`, `workly-matching-service`, `workly-profile-service`, `workly-tracking-service`, `workly-notification-service`) exposes:
+
+```
+GET /actuator/health     → liveness + sub-component status (db, redis, kafka, diskSpace)
+GET /actuator/metrics    → all registered Micrometer meters (JSON)
+GET /actuator/prometheus → Prometheus text-format scrape endpoint
+```
+
+Prometheus only scrapes `workly-api:8080` by default (`docker/prometheus.yml`). To add other services, append additional `- job_name` blocks to that file and restart the prometheus container.
+
+### Admin Portal Health tab
+
+The **Health** tab in the Admin Portal (`http://localhost:5173/health`) aggregates all of the above into a single view:
+- **Microservices**: live status, CPU usage, and JVM memory bars for every Spring Boot service.
+- **Infrastructure**: TCP reachability of every Docker container (MongoDB replica set, PostgreSQL, PgBouncer, Redis, all Kafka brokers, Elasticsearch).
+- **Observability nodes**: Prometheus / Grafana / Jaeger links open directly from the panel when they are UP.
+
+The page auto-refreshes every 30 seconds.
+
 ## 🚀 Scalability Features (Phase 6)
 
 | Feature | What | Impact |

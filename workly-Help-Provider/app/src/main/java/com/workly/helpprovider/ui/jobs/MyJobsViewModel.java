@@ -29,6 +29,7 @@ public class MyJobsViewModel extends ViewModel {
     private final MutableLiveData<List<Job>> myJobs = new MutableLiveData<>();
     private final MutableLiveData<Boolean> isLoading = new MutableLiveData<>(false);
     private final MutableLiveData<String> error = new MutableLiveData<>();
+    private String currentType = "active";
 
     @Inject
     public MyJobsViewModel(ApiService apiService, AppLogger appLogger) {
@@ -50,18 +51,39 @@ public class MyJobsViewModel extends ViewModel {
         return error;
     }
 
+    /**
+     * Prepends an accepted job to the local list immediately so the My Jobs tab
+     * reflects the accept without waiting for a network refresh.
+     */
+    public void addJobLocal(Job job) {
+        if (!"active".equals(currentType)) {
+            return;
+        }
+        java.util.List<Job> current = myJobs.getValue();
+        java.util.List<Job> updated = new java.util.ArrayList<>();
+        updated.add(job);
+        if (current != null) updated.addAll(current);
+        myJobs.setValue(updated);
+        appLogger.d(TAG, "MyJobsViewModel(Provider): added job " + job.getId() + " locally, total=" + updated.size());
+    }
+
     /** Fetch worker's jobs from the backend (newest first — server handles ordering). */
     public void loadMyJobs() {
-        appLogger.d(TAG, "MyJobsViewModel(Provider): Fetching worker jobs from network");
+        loadMyJobs(currentType);
+    }
+
+    public void loadMyJobs(String type) {
+        currentType = type;
+        appLogger.d(TAG, "MyJobsViewModel(Provider): Fetching " + type + " worker jobs from network");
         isLoading.setValue(true);
-        apiService.getWorkerJobs().enqueue(new Callback<ApiResponse<List<Job>>>() {
+        apiService.getWorkerJobs(type).enqueue(new Callback<ApiResponse<List<Job>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<Job>>> call,
                     Response<ApiResponse<List<Job>>> response) {
                 isLoading.postValue(false);
                 if (response.isSuccessful() && response.body() != null) {
                     List<Job> jobs = response.body().getData();
-                    appLogger.d(TAG, "MyJobsViewModel(Provider): Loaded " + jobs.size() + " worker jobs");
+                    appLogger.d(TAG, "MyJobsViewModel(Provider): Loaded " + jobs.size() + " " + type + " worker jobs");
                     myJobs.postValue(jobs);
                 } else {
                     appLogger.e(TAG, "MyJobsViewModel(Provider): Failed to load jobs. Code: " + response.code());

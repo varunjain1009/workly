@@ -151,3 +151,31 @@ export const getMongoCollections = async () => {
 export const getMongoSample = async (collection: string) => {
     return api.get<any>(`/reports/schema/mongo/${collection}/sample`);
 }
+
+export interface ServiceHealth {
+    name: string;
+    port: number;
+    status: 'UP' | 'DOWN' | 'DEGRADED' | 'UNKNOWN';
+    components?: Record<string, string>;
+    cpuUsage?: number;
+    memoryUsedBytes?: number;
+    memoryMaxBytes?: number;
+    error?: string;
+}
+
+export interface InfraHealth {
+    name: string;
+    category: 'DATABASE' | 'CACHE' | 'MESSAGING' | 'SEARCH' | 'OBSERVABILITY';
+    host: string;
+    port: number;
+    status: 'UP' | 'DOWN';
+}
+
+export interface SystemHealthReport {
+    services: ServiceHealth[];
+    infrastructure: InfraHealth[];
+}
+
+export const getSystemHealth = async () => {
+    return api.get<SystemHealthReport>('/admin/system-health');
+}

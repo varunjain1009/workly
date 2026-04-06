@@ -72,6 +72,21 @@ public class HomeViewModel extends ViewModel {
         jobRepository.refreshAvailableJobs(true);
     }
 
+    /**
+     * Pushes the device location to the server first, then refreshes the job list.
+     * Use this instead of refreshJobs() whenever a fresh GPS fix is available so
+     * that getMatchingJobs() on the server always has current coordinates.
+     */
+    public void refreshJobsWithLocation(double latitude, double longitude) {
+        appLogger.d(TAG, "HomeViewModel(Provider): Pushing location lat=" + latitude + " lon=" + longitude + " then refreshing jobs");
+        profileRepository.updateLocation(latitude, longitude, () -> {
+            appLogger.d(TAG, "HomeViewModel(Provider): Location pushed — force-refreshing jobs (bypass throttle)");
+            // Use forceRefresh so the 10-second spam throttle set by the initial load
+            // does not silently swallow this location-aware refresh.
+            jobRepository.forceRefreshAvailableJobs();
+        });
+    }
+
     public void setAvailability(boolean isAvailable) {
         appLogger.d(TAG, "HomeViewModel(Provider): Setting availability to " + isAvailable);
         profileRepository.updateAvailability(isAvailable, new Callback<ApiResponse<Void>>() {

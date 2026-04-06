@@ -9,7 +9,7 @@ import org.springframework.data.elasticsearch.annotations.Setting;
 import java.util.List;
 
 @Data
-@Document(indexName = "skills_index")
+@Document(indexName = "skills_index", createIndex = false)
 @Setting(settingPath = "static/es-settings.json")
 public class SkillDocument {
     @Id

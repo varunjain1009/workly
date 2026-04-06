@@ -98,21 +98,40 @@
                 android:textColor="@color/black" />
 
             <TextView
-                android:id="@+id/tv_budget_label"
+                android:id="@+id/tv_distance"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@android:color/holo_blue_dark"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tv_seeker_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Budget"
+                android:text="Job Posted By"
                 android:textColor="@color/black"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:visibility="gone" />
 
             <TextView
-                android:id="@+id/tv_budget"
+                android:id="@+id/tv_seeker_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="$50.00"
-                android:textColor="@color/black" />
+                android:layout_marginTop="4dp"
+                android:textColor="@color/black"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tv_seeker_phone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/black"
+                android:textSize="13sp"
+                android:visibility="gone" />
 
         </LinearLayout>
     </ScrollView>
@@ -151,6 +170,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
+            android:enabled="false"
             android:text="Complete Job" />
             
         <Button

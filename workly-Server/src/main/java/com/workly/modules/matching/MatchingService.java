@@ -8,13 +8,12 @@ import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.GeoResults;
 import org.springframework.data.geo.Metrics;
 import org.springframework.data.geo.Point;
+import org.springframework.data.geo.Circle;
 import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 @Slf4j
 @Service
@@ -50,8 +49,20 @@ public class MatchingService {
         } else {
             mongoResults = workerRepository.findMatchingWorkers(requiredSkills, longitude, latitude, maxDistanceMeters);
         }
-        log.debug("MatchingService: [EXIT] findMatches - MongoDB found {} workers", mongoResults.size());
-        return sortByTier(mongoResults);
+        log.debug("MatchingService: MongoDB $near found {} workers for skills={} within {}m", mongoResults.size(), requiredSkills, maxDistanceMeters);
+
+        if (!mongoResults.isEmpty()) {
+            log.debug("MatchingService: [EXIT] findMatches - returning {} geo-matched workers", mongoResults.size());
+            return sortByTier(mongoResults);
+        }
+
+        // ── Last-resort path: skill-only (no geo) ────────────────────────────
+        // Triggered when workers have no lastLocation stored yet (e.g. first login,
+        // location push still pending the 60-second batch flush, or GPS unavailable).
+        log.warn("MatchingService: No geo matches for skills={} — falling back to skill-only query (location may not be stored for those workers)", requiredSkills);
+        List<WorkerProfile> skillOnlyResults = workerRepository.findAvailableWorkersBySkills(requiredSkills);
+        log.info("MatchingService: [EXIT] findMatches - skill-only fallback returned {} workers", skillOnlyResults.size());
+        return sortByTier(skillOnlyResults);
     }
 
     /**
@@ -64,9 +75,9 @@ public class MatchingService {
     private List<WorkerProfile> findMatchesFromRedis(List<String> requiredSkills, double longitude, double latitude,
             double radiusKm, Long scheduledTimeMillis) {
         try {
+            Circle circle = new Circle(new Point(longitude, latitude), new Distance(radiusKm, Metrics.KILOMETERS));
             GeoResults<RedisGeoCommands.GeoLocation<String>> geoResults = redisTemplate.opsForGeo()
-                    .radius(GEO_KEY, new Point(longitude, latitude),
-                            new Distance(radiusKm, Metrics.KILOMETERS));
+                    .radius(GEO_KEY, circle);
 
             if (geoResults == null || geoResults.getContent().isEmpty()) {
                 return List.of();
@@ -100,10 +111,11 @@ public class MatchingService {
     }
 
     private List<WorkerProfile> sortByTier(List<WorkerProfile> workers) {
-        workers.sort(java.util.Comparator.comparing((WorkerProfile p) -> {
+        List<WorkerProfile> mutable = new java.util.ArrayList<>(workers);
+        mutable.sort(java.util.Comparator.comparing((WorkerProfile p) -> {
             if (p.getTier() == null) return 0;
             return p.getTier().ordinal();
         }).reversed());
-        return workers;
+        return mutable;
     }
 }

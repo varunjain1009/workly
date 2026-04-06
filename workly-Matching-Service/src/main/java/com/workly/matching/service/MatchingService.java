@@ -4,6 +4,7 @@ import com.workly.matching.domain.worker.WorkerProfile;
 import com.workly.matching.domain.worker.WorkerProfileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.geo.Circle;
 import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.GeoResults;
 import org.springframework.data.geo.Metrics;
@@ -55,8 +56,8 @@ public class MatchingService {
             double radiusKm, Long scheduledTimeMillis) {
         try {
             GeoResults<RedisGeoCommands.GeoLocation<String>> geoResults = redisTemplate.opsForGeo()
-                    .radius(GEO_KEY, new Point(longitude, latitude),
-                            new Distance(radiusKm, Metrics.KILOMETERS));
+                    .radius(GEO_KEY, new Circle(new Point(longitude, latitude),
+                            new Distance(radiusKm, Metrics.KILOMETERS)));
 
             if (geoResults == null || geoResults.getContent().isEmpty()) return List.of();
 

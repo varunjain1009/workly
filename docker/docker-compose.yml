@@ -54,6 +54,8 @@ services:
       POSTGRES_DB: workly
       POSTGRES_USER: workly
       POSTGRES_PASSWORD: password
+      POSTGRES_HOST_AUTH_METHOD: md5
+      POSTGRES_INITDB_ARGS: "--auth-host=md5 --auth-local=md5"
     ports:
       - "5432:5432"
     volumes:
@@ -71,6 +73,7 @@ services:
       POOL_MODE: transaction
       MAX_CLIENT_CONN: 1000
       DEFAULT_POOL_SIZE: 50
+      AUTH_TYPE: md5
     ports:
       - "6432:5432"
 
@@ -82,6 +85,11 @@ services:
     ports:
       - "6379:6379"
     command: ["redis-server", "--port", "6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6379", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   redis-replica-1:
     image: redis:7.0
@@ -89,7 +97,8 @@ services:
     ports:
       - "6380:6380"
     depends_on:
-      - redis-master
+      redis-master:
+        condition: service_healthy
 
   redis-replica-2:
     image: redis:7.0
@@ -97,46 +106,53 @@ services:
     ports:
       - "6381:6381"
     depends_on:
-      - redis-master
+      redis-master:
+        condition: service_healthy
 
   redis-sentinel-1:
     image: redis:7.0
-    command: >
-      sh -c "echo 'port 26379
-      sentinel monitor mymaster redis-master 6379 2
-      sentinel down-after-milliseconds mymaster 5000
-      sentinel failover-timeout mymaster 10000
-      sentinel parallel-syncs mymaster 1' > /tmp/sentinel.conf && redis-sentinel /tmp/sentinel.conf"
+    volumes:
+      - ./redis-sentinel.conf:/tmp/sentinel-init.conf:ro
+    command:
+      - sh
+      - -c
+      - "until redis-cli -h redis-master -p 6379 ping 2>/dev/null | grep -q PONG; do echo 'Waiting for redis-master...'; sleep 1; done && cp /tmp/sentinel-init.conf /tmp/sentinel.conf && redis-sentinel /tmp/sentinel.conf"
     ports:
       - "26379:26379"
+    restart: on-failure
     depends_on:
-      - redis-master
+      redis-master:
+        condition: service_healthy
 
   redis-sentinel-2:
     image: redis:7.0
-    command: >
-      sh -c "echo 'port 26379
-      sentinel monitor mymaster redis-master 6379 2
-      sentinel down-after-milliseconds mymaster 5000
-      sentinel failover-timeout mymaster 10000
-      sentinel parallel-syncs mymaster 1' > /tmp/sentinel.conf && redis-sentinel /tmp/sentinel.conf"
+    volumes:
+      - ./redis-sentinel.conf:/tmp/sentinel-init.conf:ro
+    command:
+      - sh
+      - -c
+      - "until redis-cli -h redis-master -p 6379 ping 2>/dev/null | grep -q PONG; do echo 'Waiting for redis-master...'; sleep 1; done && cp /tmp/sentinel-init.conf /tmp/sentinel.conf && redis-sentinel /tmp/sentinel.conf"
     ports:
       - "26380:26379"
+    restart: on-failure
     depends_on:
-      - redis-master
+      redis-master:
+        condition: service_healthy
 
   redis-sentinel-3:
     image: redis:7.0
-    command: >
-      sh -c "echo 'port 26379
-      sentinel monitor mymaster redis-master 6379 2
-      sentinel down-after-milliseconds mymaster 5000
-      sentinel failover-timeout mymaster 10000
-      sentinel parallel-syncs mymaster 1' > /tmp/sentinel.conf && redis-sentinel /tmp/sentinel.conf"
+    volumes:
+      - ./redis-sentinel.conf:/tmp/sentinel-init.conf:ro
+    command:
+      - sh
+      - -c
+      - "until redis-cli -h redis-master -p 6379 ping 2>/dev/null | grep -q PONG; do echo 'Waiting for redis-master...'; sleep 1; done && cp /tmp/sentinel-init.conf /tmp/sentinel.conf && redis-sentinel /tmp/sentinel.conf"
     ports:
       - "26381:26379"
+    restart: on-failure
     depends_on:
-      - redis-master
+      redis-master:
+        condition: service_healthy
 
   # ============================================
   # KAFKA (3 Brokers)
@@ -160,8 +176,13 @@ services:
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9094,PLAINTEXT_INTERNAL://0.0.0.0:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
-      KAFKA_MIN_INSYNC_REPLICAS: 2
+      # Local dev: single-broker settings — safe to lose a broker without halting producers
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_MIN_INSYNC_REPLICAS: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_HEAP_OPTS: "-Xms128m -Xmx256m"
 
   kafka2:
     image: confluentinc/cp-kafka:7.5.0
@@ -176,8 +197,12 @@ services:
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9095,PLAINTEXT_INTERNAL://0.0.0.0:29093
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
-      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_MIN_INSYNC_REPLICAS: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_HEAP_OPTS: "-Xms128m -Xmx256m"
 
   kafka3:
     image: confluentinc/cp-kafka:7.5.0
@@ -192,8 +217,12 @@ services:
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9096,PLAINTEXT_INTERNAL://0.0.0.0:29094
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
-      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_MIN_INSYNC_REPLICAS: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_HEAP_OPTS: "-Xms128m -Xmx256m"
 
   # ============================================
   # ELASTICSEARCH
@@ -207,7 +236,7 @@ services:
       - node.name=elasticsearch
       - discovery.type=single-node
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
       - xpack.security.enabled=true
       - ELASTIC_PASSWORD=password
     ulimits:
@@ -225,7 +254,7 @@ services:
   nginx:
     image: nginx:alpine
     ports:
-      - "8080:80"
+      - "8081:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
@@ -265,7 +294,8 @@ services:
       dockerfile: Dockerfile
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/workly?replicaSet=rs0
-      - SPRING_REDIS_SENTINEL_NODES=redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379
+      - SPRING_DATA_REDIS_SENTINEL_MASTER=mymaster
+      - SPRING_DATA_REDIS_SENTINEL_NODES=redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka1:29092,kafka2:29093,kafka3:29094
       - SPRING_DATASOURCE_URL=jdbc:postgresql://pgbouncer:5432/workly
       - ELASTICSEARCH_URIS=http://elasticsearch:9200
@@ -288,7 +318,8 @@ services:
       dockerfile: workly-Notification-Service/Dockerfile
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/workly?replicaSet=rs0
-      - SPRING_REDIS_SENTINEL_NODES=redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379
+      - SPRING_DATA_REDIS_SENTINEL_MASTER=mymaster
+      - SPRING_DATA_REDIS_SENTINEL_NODES=redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka1:29092,kafka2:29093,kafka3:29094
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
       - OTEL_SERVICE_NAME=workly-notification-service
@@ -305,7 +336,8 @@ services:
       dockerfile: workly-Tracking-Service/Dockerfile
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/workly?replicaSet=rs0
-      - SPRING_REDIS_SENTINEL_NODES=redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379
+      - SPRING_DATA_REDIS_SENTINEL_MASTER=mymaster
+      - SPRING_DATA_REDIS_SENTINEL_NODES=redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
       - OTEL_SERVICE_NAME=workly-tracking-service
     ports:
@@ -320,7 +352,8 @@ services:
       dockerfile: workly-Profile-Service/Dockerfile
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/workly?replicaSet=rs0
-      - SPRING_REDIS_SENTINEL_NODES=redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379
+      - SPRING_DATA_REDIS_SENTINEL_MASTER=mymaster
+      - SPRING_DATA_REDIS_SENTINEL_NODES=redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka1:29092,kafka2:29093,kafka3:29094
       - SEARCH_SERVICE_URL=http://workly-search-service:8083
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318

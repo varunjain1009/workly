@@ -1,33 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+<androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/swipe_refresh_my_jobs"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/toggle_my_job_type"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal|top"
+        android:padding="8dp"
+        app:checkedButton="@id/btn_active_jobs"
+        app:selectionRequired="true"
+        app:singleSelection="true">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_my_jobs"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:padding="8dp"
-            android:visibility="gone" />
-
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/tv_my_jobs_empty"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_active_jobs"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="No active jobs yet.\nAccept a job to see it here."
-            android:textAlignment="center"
-            android:textColor="@android:color/darker_gray"
-            android:textSize="16sp"
-            android:visibility="visible" />
+            android:text="Active" />
 
-    </FrameLayout>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_completed_jobs"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Completed" />
 
-</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh_my_jobs"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="56dp">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_my_jobs"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:padding="8dp"
+                android:visibility="gone" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tv_my_jobs_empty"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="No active jobs yet.\nAccept a job to see it here."
+                android:textAlignment="center"
+                android:textColor="@android:color/darker_gray"
+                android:textSize="16sp"
+                android:visibility="visible" />
+
+        </FrameLayout>
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

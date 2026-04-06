@@ -14,9 +14,13 @@ public class SkillDataSeeder implements CommandLineRunner {
     private final SkillSyncService skillSyncService;
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         log.info("Checking for existing skills and performing initial sync...");
-        skillSyncService.syncAll();
-        log.info("Skill seeding and sync check completed.");
+        try {
+            skillSyncService.syncAll();
+            log.info("Skill seeding and sync check completed.");
+        } catch (Exception e) {
+            log.warn("Skill sync skipped — Elasticsearch unavailable at startup ({}). Skill normalisation will be degraded until ES comes up.", e.getMessage());
+        }
     }
 }

@@ -37,7 +37,15 @@ public class JobAcceptanceService {
                     .orElseThrow(() -> WorklyException.notFound("Job not found"));
             log.debug("JobAcceptanceService: Loaded job {} with current status: {}", jobId, job.getStatus());
 
-            if (job.getStatus() != JobStatus.BROADCASTED && job.getStatus() != JobStatus.SCHEDULED) {
+            if (job.getAssignmentMode() == AssignmentMode.MANUAL_SELECT
+                    && job.getWorkerMobileNumber() != null
+                    && !job.getWorkerMobileNumber().equals(workerMobileNumber)) {
+                throw WorklyException.forbidden("This job was sent to another provider");
+            }
+
+            if (job.getStatus() != JobStatus.BROADCASTED
+                    && job.getStatus() != JobStatus.SCHEDULED
+                    && job.getStatus() != JobStatus.PENDING_ACCEPTANCE) {
                 log.debug("JobAcceptanceService: [FAIL] Job {} status {} is not acceptable", jobId, job.getStatus());
                 throw WorklyException.badRequest("Job is no longer available for acceptance");
             }

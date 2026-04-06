@@ -60,22 +60,27 @@ public class AutocompleteService {
 
     private List<String> searchInElasticsearch(String query) {
         log.debug("AutocompleteService: [ENTER] searchInElasticsearch - query: '{}'", query);
-        // Construct Criteria Query
-        // Match prefix OR fuzzy OR alias match
-        Criteria criteria = new Criteria("canonicalName").contains(query)
-                .or(new Criteria("canonicalName").fuzzy(query))
-                .or(new Criteria("aliases").is(query)); // Analyzer on index handles phonetics
+        try {
+            // Construct Criteria Query
+            // Match prefix OR fuzzy OR alias match
+            Criteria criteria = new Criteria("canonicalName").contains(query)
+                    .or(new Criteria("canonicalName").fuzzy(query))
+                    .or(new Criteria("aliases").is(query)); // Analyzer on index handles phonetics
 
-        CriteriaQuery searchQuery = new CriteriaQuery(criteria)
-                .setPageable(PageRequest.of(0, 5));
+            CriteriaQuery searchQuery = new CriteriaQuery(criteria)
+                    .setPageable(PageRequest.of(0, 5));
 
-        SearchHits<SkillDocument> hits = elasticsearchOperations.search(searchQuery, SkillDocument.class);
-        List<String> results = hits.stream()
-                .map(hit -> hit.getContent().getCanonicalName())
-                .distinct()
-                .collect(Collectors.toList());
-        log.debug("AutocompleteService: [EXIT] searchInElasticsearch - query: '{}', totalHits: {}, distinct results: {}",
-                query, hits.getTotalHits(), results.size());
-        return results;
+            SearchHits<SkillDocument> hits = elasticsearchOperations.search(searchQuery, SkillDocument.class);
+            List<String> results = hits.stream()
+                    .map(hit -> hit.getContent().getCanonicalName())
+                    .distinct()
+                    .collect(Collectors.toList());
+            log.debug("AutocompleteService: [EXIT] searchInElasticsearch - query: '{}', totalHits: {}, distinct results: {}",
+                    query, hits.getTotalHits(), results.size());
+            return results;
+        } catch (Exception e) {
+            log.warn("AutocompleteService: Elasticsearch unavailable for query '{}' — returning empty list ({})", query, e.getMessage());
+            return List.of();
+        }
     }
 }

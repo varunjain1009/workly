@@ -1,10 +1,11 @@
 package com.workly.modules.verification;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.workly.common.security.JwtUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -17,7 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@WebMvcTest(VerificationController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 class VerificationControllerTest {
@@ -25,32 +26,17 @@ class VerificationControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @MockitoBean
     private JobVerificationService verificationService;
 
     @MockitoBean
-    private com.workly.common.security.JwtUtils jwtUtils;
-
-    @MockitoBean
-    private org.springframework.kafka.core.KafkaTemplate<String, Object> kafkaTemplate;
+    private JwtUtils jwtUtils;
 
     @MockitoBean
     private org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
-
-    @MockitoBean
-    private com.workly.modules.profile.WorkerProfileRepository workerProfileRepository;
-
-    @MockitoBean
-    private com.workly.modules.profile.SkillSeekerProfileRepository skillSeekerProfileRepository;
-
-    @MockitoBean
-    private com.workly.modules.job.JobRepository jobRepository;
-
-    @MockitoBean
-    private com.workly.modules.review.ReviewRepository reviewRepository;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @Test
     @WithMockUser

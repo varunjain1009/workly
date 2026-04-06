@@ -1,14 +1,22 @@
 package com.workly.helpprovider.service;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
-import android.util.Log;
+import android.content.Intent;
+import android.os.Build;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.NotificationCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import com.workly.helpprovider.data.auth.AuthManager;
+import com.workly.helpprovider.data.repository.JobRepository;
 import com.workly.helpprovider.data.repository.ProfileRepository;
+import com.workly.helpprovider.ui.main.MainActivity;
 
 import javax.inject.Inject;
 
@@ -18,9 +26,13 @@ import dagger.hilt.android.AndroidEntryPoint;
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private static final String TAG = "MyFirebaseMsgService";
+    private static final String CHANNEL_ID = "workly_jobs";
 
     @Inject
     ProfileRepository profileRepository;
+
+    @Inject
+    JobRepository jobRepository;
 
     @Inject
     AuthManager authManager;
@@ -34,69 +46,77 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     @Override
     public void onNewToken(@NonNull String token) {
         appLogger.d(TAG, "Refreshed token: " + token);
-
-        // If you want to send messages to this application instance or
-        // manage this apps subscriptions on the server side, send the
-        // FCM registration token to your app server.
-        sendRegistrationToServer(token);
-    }
-
-    private void sendRegistrationToServer(String token) {
-        if (authManager.isLoggedIn()) {
-            // We can update the token if the user is logged in
-            // Ideally calling repository
-            // Since services are started by system, Hilt injection should work if
-            // @AndroidEntryPoint is present
-            if (profileRepository != null) {
-                profileRepository.updateDeviceToken(token);
-            }
-        } else {
-            // Store locally and send on login?
-            // authManager.saveTempToken(token);
+        if (authManager.isLoggedIn() && profileRepository != null) {
+            profileRepository.updateDeviceToken(token);
         }
     }
 
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
-        // Not getting messages here? See why this may be: https://goo.gl/39bRNJ
         appLogger.d(TAG, "From: " + remoteMessage.getFrom());
-
-        // Check if message contains a data payload.
-        if (remoteMessage.getData().size() > 0) {
-            appLogger.d(TAG, "Message data payload: " + remoteMessage.getData());
-
-            String title = remoteMessage.getData().get("title");
-            if ("CONFIG_UPDATE".equals(title) || "CONFIG_UPDATE".equals(remoteMessage.getData().get("type"))) {
-                appLogger.d(TAG, "Received Config Update Notification");
-                configManager.syncConfig();
-            }
-
-            if (/* Check if data needs to be processed by long running job */ false) {
-                // For long-running tasks (10 seconds or more) use WorkManager.
-                scheduleJob();
-            } else {
-                // Handle message within 10 seconds
-                handleNow();
-            }
+        if (remoteMessage.getData().isEmpty()) {
+            return;
         }
 
-        // Check if message contains a notification payload.
-        if (remoteMessage.getNotification() != null) {
-            appLogger.d(TAG, "Message Notification Body: " + remoteMessage.getNotification().getBody());
-            // Show notification if app is in foreground, otherwise system handles it.
+        appLogger.d(TAG, "Message data payload: " + remoteMessage.getData());
+
+        String title = remoteMessage.getData().get("title");
+        String body = remoteMessage.getData().get("body");
+        String type = remoteMessage.getData().get("type");
+        String jobId = remoteMessage.getData().get("jobId");
+
+        if ("CONFIG_UPDATE".equals(title) || "CONFIG_UPDATE".equals(type)) {
+            configManager.syncConfig();
+            return;
         }
 
-        // Also if you intend on generating your own notifications as a result of a
-        // received FCM
-        // message, here is where that should be initiated. See sendNotification method
-        // below.
+        if ("NEW_JOB_AWAITING_ACCEPTANCE".equals(type)
+                || "NEW_JOB_AVAILABLE".equals(type)
+                || "JOB_ASSIGNED".equals(type)) {
+            jobRepository.forceRefreshAvailableJobs();
+            LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
+            manager.sendBroadcast(new Intent("PROVIDER_AVAILABLE_JOBS_UPDATED"));
+            manager.sendBroadcast(new Intent("PROVIDER_MY_JOBS_UPDATED"));
+            showNotification(
+                    title != null ? title : "New Job Available",
+                    body != null ? body : "New job is awaiting for acceptance",
+                    jobId);
+        }
     }
 
-    private void scheduleJob() {
-        // WorkManager
-    }
+    private void showNotification(String title, String message, String jobId) {
+        NotificationManager notificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (notificationManager == null) {
+            return;
+        }
 
-    private void handleNow() {
-        // Process
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            notificationManager.createNotificationChannel(new NotificationChannel(
+                    CHANNEL_ID, "Workly Jobs", NotificationManager.IMPORTANCE_HIGH));
+        }
+
+        Intent intent = new Intent(this, MainActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        if (jobId != null) {
+            intent.putExtra("jobId", jobId);
+        }
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this,
+                jobId != null ? jobId.hashCode() : 1001,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(pendingIntent);
+
+        notificationManager.notify(jobId != null ? jobId.hashCode() : 1001, builder.build());
     }
 }

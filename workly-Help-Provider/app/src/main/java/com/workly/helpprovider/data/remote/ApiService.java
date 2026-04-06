@@ -34,7 +34,8 @@ public interface ApiService {
     Call<ApiResponse<java.util.List<com.workly.helpprovider.data.model.Job>>> getAvailableJobs();
 
     @GET("jobs/worker")
-    Call<ApiResponse<java.util.List<com.workly.helpprovider.data.model.Job>>> getWorkerJobs();
+    Call<ApiResponse<java.util.List<com.workly.helpprovider.data.model.Job>>> getWorkerJobs(
+            @retrofit2.http.Query("type") String type);
 
     @POST("jobs/{jobId}/accept")
     Call<ApiResponse<Void>> acceptJob(@retrofit2.http.Path("jobId") String jobId);
@@ -42,7 +43,7 @@ public interface ApiService {
     @POST("jobs/{jobId}/complete")
     Call<ApiResponse<Void>> completeJob(@retrofit2.http.Path("jobId") String jobId, @Body Map<String, String> body);
 
-    @POST("profile/device-token")
+    @POST("profiles/device-token")
     Call<ApiResponse<Void>> updateDeviceToken(@Body Map<String, String> tokenMap);
 
     @GET("reviews/worker/{mobileNumber}/average")

@@ -33,6 +33,7 @@ public class JobService {
     private final OutboxEventRepository outboxEventRepository;
     private final SearchServiceClient searchServiceClient;
     private final ProfileService profileService;
+    private final MongoTemplate mongoTemplate;
 
     @Qualifier("secondaryMongoTemplate")
     private final MongoTemplate secondaryMongoTemplate;
@@ -63,6 +64,11 @@ public class JobService {
             job.setStatus(JobStatus.BROADCASTED);
         } else if (job.getScheduledTime() != null) {
             job.setStatus(JobStatus.SCHEDULED);
+        }
+        if (job.getAssignmentMode() == AssignmentMode.MANUAL_SELECT
+                && job.getWorkerMobileNumber() != null
+                && !job.getWorkerMobileNumber().isBlank()) {
+            job.setStatus(JobStatus.PENDING_ACCEPTANCE);
         }
 
         if (job.getLocation() != null) {
@@ -199,10 +205,11 @@ public class JobService {
                 ? Query.query(Criteria.where("seekerMobileNumber").is(mobileNumber)
                         .and("status").in(statuses))
                 : Query.query(Criteria.where("seekerMobileNumber").is(mobileNumber));
+        q.with(org.springframework.data.domain.Sort.by(
+                org.springframework.data.domain.Sort.Direction.DESC, "createdAt"));
         q.with(org.springframework.data.domain.PageRequest.of(page, size));
 
-        // Read from replica secondary — seeker job history is eventually consistent
-        List<Job> jobs = secondaryMongoTemplate.find(q, Job.class);
+        List<Job> jobs = mongoTemplate.find(q, Job.class);
         log.info("Found {} {} jobs for seeker mobile: {}", jobs.size(), type != null ? type : "all", mobileNumber);
         log.debug("JobService: [EXIT] getSeekerJobs - collection size: {}", jobs.size());
         return jobs;
@@ -219,20 +226,34 @@ public class JobService {
     }
 
     public List<Job> getWorkerJobs(String mobileNumber) {
-        return getWorkerJobs(mobileNumber, 0, 50);
+        return getWorkerJobs(mobileNumber, null, 0, 50);
     }
 
-    public List<Job> getWorkerJobs(String mobileNumber, int page, int size) {
-        log.debug("Fetching worker jobs - mobile: {}, page: {}, size: {}", mobileNumber, page, size);
-        Query q = Query.query(Criteria.where("workerMobileNumber").is(mobileNumber))
+    public List<Job> getWorkerJobs(String mobileNumber, String type, int page, int size) {
+        log.debug("Fetching worker jobs - mobile: {}, type: {}, page: {}, size: {}", mobileNumber, type, page, size);
+        Criteria criteria = Criteria.where("workerMobileNumber").is(mobileNumber);
+        List<JobStatus> statuses = resolveWorkerStatusFilter(type);
+        if (statuses != null) {
+            criteria = criteria.and("status").in(statuses);
+        }
+
+        Query q = Query.query(criteria)
                 .with(org.springframework.data.domain.Sort.by(
                         org.springframework.data.domain.Sort.Direction.DESC, "createdAt"))
                 .with(org.springframework.data.domain.PageRequest.of(page, size));
 
-        // Read from replica secondary — worker job history is eventually consistent
-        List<Job> jobs = secondaryMongoTemplate.find(q, Job.class);
+        List<Job> jobs = mongoTemplate.find(q, Job.class);
         log.info("Found {} jobs for worker mobile: {}", jobs.size(), mobileNumber);
         return jobs;
+    }
+
+    private List<JobStatus> resolveWorkerStatusFilter(String type) {
+        if ("active".equalsIgnoreCase(type)) {
+            return List.of(JobStatus.PENDING_ACCEPTANCE, JobStatus.ASSIGNED);
+        } else if ("completed".equalsIgnoreCase(type)) {
+            return List.of(JobStatus.COMPLETED);
+        }
+        return null;
     }
 
     /**
@@ -257,27 +278,29 @@ public class JobService {
 
         var worker = workerOpt.get();
         double[] loc = worker.getLastLocation();
-        if (loc == null || loc.length < 2) {
-            log.warn("JobService: Worker {} has no location set, returning empty", workerMobile);
-            return List.of();
-        }
 
         List<JobStatus> matchStatuses = List.of(JobStatus.BROADCASTED, JobStatus.SCHEDULED);
-        // Use the configured max radius (default 50km), converted to meters
-        double radiusMeters = (worker.getTravelRadiusKm() > 0 ? worker.getTravelRadiusKm() : 50) * 1000.0;
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
 
         List<Job> jobs;
-        if (worker.getSkills() != null && !worker.getSkills().isEmpty()) {
-            jobs = jobRepository.findMatchingJobs(
-                    loc[0], loc[1], matchStatuses, worker.getSkills(), radiusMeters, pageable);
+        if (loc == null || loc.length < 2) {
+            log.warn("JobService: Worker {} has no stored location — returning all active jobs without geo filter", workerMobile);
+            jobs = jobRepository.findByStatusIn(matchStatuses, pageable);
         } else {
-            // Worker hasn't set skills — show all nearby jobs
-            jobs = jobRepository.findNearbyJobs(
-                    loc[0], loc[1], matchStatuses, radiusMeters, pageable);
+            // Use the configured max radius (default 50km), converted to meters
+            double radiusMeters = (worker.getTravelRadiusKm() > 0 ? worker.getTravelRadiusKm() : 50) * 1000.0;
+            if (worker.getSkills() != null && !worker.getSkills().isEmpty()) {
+                jobs = jobRepository.findMatchingJobs(
+                        loc[0], loc[1], matchStatuses, worker.getSkills(), radiusMeters, pageable);
+            } else {
+                // Worker hasn't set skills — show all nearby jobs
+                jobs = jobRepository.findNearbyJobs(
+                        loc[0], loc[1], matchStatuses, radiusMeters, pageable);
+            }
+            log.info("JobService: Found {} matching jobs for worker {} within {}m", jobs.size(), workerMobile, radiusMeters);
         }
 
-        log.info("JobService: Found {} matching jobs for worker {} within {}m", jobs.size(), workerMobile, radiusMeters);
+        log.info("JobService: Returning {} jobs for worker {}", jobs.size(), workerMobile);
         log.debug("JobService: [EXIT] getMatchingJobs");
         return jobs;
     }

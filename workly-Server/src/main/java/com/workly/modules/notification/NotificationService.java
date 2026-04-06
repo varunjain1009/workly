@@ -1,5 +1,6 @@
 package com.workly.modules.notification;
 
+import com.workly.modules.job.AssignmentMode;
 import com.workly.modules.job.JobEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,6 +50,24 @@ public class NotificationService {
                 job.getSearchRadiusKm(), // int
                 scheduledTimeMillis);
 
+        if (job.getAssignmentMode() == AssignmentMode.MANUAL_SELECT
+                && job.getWorkerMobileNumber() != null
+                && !job.getWorkerMobileNumber().isBlank()) {
+            String workerToken = userTokenService.getToken(job.getWorkerMobileNumber());
+            if (workerToken == null || workerToken.isBlank()) {
+                log.warn("NotificationService: No FCM token found for selected worker {}", job.getWorkerMobileNumber());
+                return;
+            }
+
+            java.util.Map<String, String> data = new java.util.HashMap<>();
+            data.put("jobId", job.getId());
+            data.put("type", "NEW_JOB_AWAITING_ACCEPTANCE");
+            fcmService.sendNotificationWithData(workerToken, "New Job Available",
+                    "New job is awaiting for acceptance", data);
+            log.debug("NotificationService: [EXIT] handleJobCreated - targeted push dispatched for worker {}", job.getWorkerMobileNumber());
+            return;
+        }
+
         // Logic Refinement based on Job Type
         if (job.isImmediate()) {
             if (matchingWorkers.isEmpty()) {
@@ -72,8 +91,11 @@ public class NotificationService {
                 .toList();
 
         if (!tokens.isEmpty()) {
+            java.util.Map<String, String> data = new java.util.HashMap<>();
+            data.put("jobId", job.getId());
+            data.put("type", "NEW_JOB_AVAILABLE");
             fcmService.sendBatch(tokens, "New Job Available",
-                    "A job matching your skills is available.", null);
+                    "A job matching your skills is available.", data);
         }
         log.debug("NotificationService: [EXIT] handleJobCreated - Batch push dispatched for {} tokens", tokens.size());
     }

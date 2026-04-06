@@ -17,6 +17,10 @@ public interface WorkerProfileRepository extends MongoRepository<WorkerProfile, 
     List<WorkerProfile> findMatchingWorkersAvailableAt(List<String> requiredSkills, double longitude, double latitude,
             double maxDistance, long targetTimeMillis);
 
+    /** Fallback: return all available workers with matching skills, ignoring location. */
+    @Query("{ 'available': true, 'skills': { $in: ?0 } }")
+    List<WorkerProfile> findAvailableWorkersBySkills(List<String> requiredSkills);
+
     long countByCreatedAtAfter(java.time.LocalDateTime date);
 
     long countByCreatedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);

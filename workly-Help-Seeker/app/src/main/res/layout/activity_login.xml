@@ -36,6 +36,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="48dp"
         android:hint="Mobile Number"
+        app:placeholderText="enter phone number"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_welcome"

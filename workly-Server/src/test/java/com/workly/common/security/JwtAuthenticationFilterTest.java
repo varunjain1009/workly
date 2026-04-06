@@ -1,4 +1,4 @@
-package com.workly.modules.auth;
+package com.workly.common.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
@@ -7,10 +7,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class JwtAuthenticationFilterTest {
@@ -37,7 +37,7 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    void doFilterInternal_ShouldSetAuthenticationIfTokenValid() throws Exception {
+    void shouldSetAuthentication_whenTokenValid() throws Exception {
         String token = "valid-token";
         String mobile = "1234567890";
 
@@ -47,12 +47,16 @@ class JwtAuthenticationFilterTest {
 
         jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
 
-        assertEquals(mobile, SecurityContextHolder.getContext().getAuthentication().getPrincipal());
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        assertNotNull(auth);
+        assertEquals(mobile, auth.getPrincipal()); // adjust if using UserDetails
+
         verify(filterChain).doFilter(request, response);
     }
 
     @Test
-    void doFilterInternal_ShouldNotSetAuthenticationIfTokenMissing() throws Exception {
+    void shouldNotSetAuthentication_whenTokenMissing() throws Exception {
         when(request.getHeader("Authorization")).thenReturn(null);
 
         jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
